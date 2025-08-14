@@ -665,18 +665,36 @@ create index if not exists books_isbn_idx on public.books (isbn);
       if (!isbn) return null;
       const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '');
       if (cleanIsbn.length < 10) return null;
+      // 1. Tenta Biblioteca Nacional
       try {
         const resp = await fetch(`https://servicos.bn.gov.br/api/consulta/isbn/${cleanIsbn}`);
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data[0];
+        if (resp.ok) {
+          const data = await resp.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return {
+              titulo: data[0].titulo,
+              autor: data[0].autor,
+              ano: data[0].ano
+            };
+          }
         }
-        return null;
-      } catch (e) {
-        // Falha de rede ou resposta inesperada
-        return null;
-      }
+      } catch (e) { /* ignora erro */ }
+      // 2. Fallback: Open Library
+      try {
+        const resp2 = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
+        if (resp2.ok) {
+          const data2 = await resp2.json();
+          const bookData = data2[`ISBN:${cleanIsbn}`];
+          if (bookData) {
+            return {
+              titulo: bookData.title || '',
+              autor: bookData.authors ? bookData.authors.map(a => a.name).join('; ') : '',
+              ano: bookData.publish_date ? (bookData.publish_date.match(/\d{4}/)?.[0] || '') : ''
+            };
+          }
+        }
+      } catch (e) { /* ignora erro */ }
+      return null;
     }
 
     // Organiza a busca e preenchimento de campos pelo ISBN
