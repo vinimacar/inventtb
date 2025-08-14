@@ -804,13 +804,19 @@ create index if not exists books_isbn_idx on public.books (isbn);
     async function saveEdit(){
       ensureClient();
       if(!currentEditId) return;
+      // Ajuste: enviar apenas campos existentes na tabela books
+      const year = el('#edYear').value ? parseInt(el('#edYear').value, 10) : null;
+      const genre = el('#edGenre').value || null;
+      let notes = el('#edNotes').value.trim() || '';
+      if (year) {
+        notes = `[Ano: ${year}] ` + notes;
+      }
       const upd = {
         isbn: el('#edIsbn').value.trim() || null,
         title: el('#edTitle').value.trim(),
         author: el('#edAuthor').value.trim() || null,
-        year: el('#edYear').value ? parseInt(el('#edYear').value, 10) : null,
-        genre: el('#edGenre').value || null,
-        notes: el('#edNotes').value.trim() || null,
+        category: genre, // Salva o gênero em category
+        notes: notes || null,
         quantity: parseInt(el('#edQty').value || '0', 10),
       };
       const { error } = await supabaseClient.from('books').update(upd).eq('id', currentEditId);
