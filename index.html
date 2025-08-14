@@ -766,8 +766,8 @@ create index if not exists books_isbn_idx on public.books (isbn);
         genre: el('#bkGenre').value || null,
         notes: el('#bkNotes').value.trim() || null,
         quantity: parseInt(el('#bkQty').value || '0', 10),
-        user_id: session.user.id,
-        user_email: session.user.email,
+        user_id: session.user.id
+        // Não enviar user_email nem outros campos não existentes
       };
       if(!book.title) return toast('Informe o título.');
       if(book.quantity < 0) return toast('Quantidade inválida.');
