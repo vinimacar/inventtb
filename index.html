@@ -693,21 +693,21 @@ create index if not exists books_isbn_idx on public.books (isbn);
       if (!isbn) return null;
       const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '');
       if (cleanIsbn.length < 10) return null;
-      // 1. Tenta Biblioteca Nacional
-      try {
-        const resp = await fetch(`https://servicos.bn.gov.br/api/consulta/isbn/${cleanIsbn}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (Array.isArray(data) && data.length > 0) {
-            return {
-              titulo: data[0].titulo,
-              autor: data[0].autor,
-              ano: data[0].ano
-            };
-          }
-        }
-      } catch (e) { /* ignora erro */ }
-      // 2. Fallback: Open Library
+      // Remova ou comente este bloco para evitar o erro:
+      // try {
+      //   const resp = await fetch(`https://servicos.bn.gov.br/api/consulta/isbn/${cleanIsbn}`);
+      //   if (resp.ok) {
+      //     const data = await resp.json();
+      //     if (Array.isArray(data) && data.length > 0) {
+      //       return {
+      //         titulo: data[0].titulo,
+      //         autor: data[0].autor,
+      //         ano: data[0].ano
+      //       };
+      //     }
+      //   }
+      // } catch (e) { /* ignora erro */ }
+      // Fallback: Open Library
       try {
         const resp2 = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
         if (resp2.ok) {
@@ -819,25 +819,33 @@ create index if not exists books_isbn_idx on public.books (isbn);
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
       // Capturar ano e gênero dos campos
+      const title = el('#bkTitle').value.trim();
+      const isbn = el('#bkIsbn').value.trim() || null;
+      const author = el('#bkAuthor').value.trim() || null;
       const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
       const genre = el('#bkGenre').value || null;
       const notes = el('#bkNotes').value.trim() || null;
-
       const qtyValue = el('#bkQty').value;
       const quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
 
+      if(!title) return toast('Informe o título.');
+      if(isNaN(quantity) || quantity < 0) return toast('Quantidade inválida.');
+
+      // Monta apenas os campos definidos na tabela
       const book = {
-        isbn: el('#bkIsbn').value.trim() || null,
-        title: el('#bkTitle').value.trim(),
-        author: el('#bkAuthor').value.trim() || null,
-        year: year,
-        genre: genre,
-        notes: notes,
-        quantity: quantity,
+        isbn,
+        title,
+        author,
+        year,
+        genre,
+        notes,
+        quantity,
         user_id: session.user.id
       };
-      if(!book.title) return toast('Informe o título.');
-      if(isNaN(book.quantity) || book.quantity < 0) return toast('Quantidade inválida.');
+
+      // Remove campos nulos para evitar erro
+      Object.keys(book).forEach(k => (book[k] === null || book[k] === '') && delete book[k]);
+
       const { error } = await supabaseClient.from('books').insert(book);
       if(error) return toast(error.message);
       toast('Livro adicionado.');
