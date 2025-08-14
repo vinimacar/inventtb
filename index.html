@@ -758,16 +758,21 @@ create index if not exists books_isbn_idx on public.books (isbn);
     async function addBook(){
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
+      // Ajuste: enviar apenas campos existentes na tabela books
+      const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
+      const genre = el('#bkGenre').value || null;
+      let notes = el('#bkNotes').value.trim() || '';
+      if (year) {
+        notes = `[Ano: ${year}] ` + notes;
+      }
       const book = {
         isbn: el('#bkIsbn').value.trim() || null,
         title: el('#bkTitle').value.trim(),
         author: el('#bkAuthor').value.trim() || null,
-        year: el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null,
-        genre: el('#bkGenre').value || null,
-        notes: el('#bkNotes').value.trim() || null,
+        category: genre, // Salva o gênero em category
+        notes: notes || null,
         quantity: parseInt(el('#bkQty').value || '0', 10),
         user_id: session.user.id
-        // Não enviar user_email nem outros campos não existentes
       };
       if(!book.title) return toast('Informe o título.');
       if(book.quantity < 0) return toast('Quantidade inválida.');
