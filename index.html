@@ -308,6 +308,8 @@ create table if not exists public.books (
   author text,
   isbn text,
   category text,
+  year integer,
+  genre text,
   location text,
   notes text,
   quantity integer not null default 1,
@@ -740,7 +742,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const tbody = el('#tblBooks tbody');
       tbody.innerHTML = '';
       const rows = booksCache.filter(b => (
-        `${b.title} ${b.author||''} ${b.isbn||''}`.toLowerCase().includes(q)
+        `${b.title} ${b.author||''} ${b.isbn||''} ${b.year||''} ${b.genre||b.category||''}`.toLowerCase().includes(q)
       ));
       el('#totalBadge').textContent = `${rows.length} itens`;
       for(const b of rows){
@@ -753,20 +755,27 @@ create index if not exists books_isbn_idx on public.books (isbn);
         } else if (b.user_email) {
           colaborador = b.user_email;
         }
+        // Botões de ação baseados na propriedade do livro
+        let actionButtons = `
+            <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
+            <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>`;
+        
+        // Só mostra botões de editar e excluir para livros do usuário logado
+        if (session && session.user && b.user_id === session.user.id) {
+          actionButtons += `
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>`;
+        }
+        
         tr.innerHTML = `
           <td>${escapeHtml(b.isbn||'—')}</td>
           <td>${escapeHtml(b.title)}</td>
           <td>${escapeHtml(b.author||'—')}</td>
           <td>${escapeHtml(b.year||'—')}</td>
-          <td>${escapeHtml(b.genre||'—')}</td>
+          <td>${escapeHtml(b.genre||b.category||'—')}</td>
           <td class="right ${qtyClass}">${b.quantity}</td>
           <td>${escapeHtml(colaborador)}</td>
-          <td class="right">
-            <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
-            <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>
-            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
-            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>
-          </td>`;
+          <td class="right">${actionButtons}</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -776,19 +785,19 @@ create index if not exists books_isbn_idx on public.books (isbn);
     async function addBook(){
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
-      // Ajuste: enviar apenas campos existentes na tabela books
+      // Capturar ano e gênero dos campos
       const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
       const genre = el('#bkGenre').value || null;
-      let notes = el('#bkNotes').value.trim() || '';
-      if (year) {
-        notes = `[Ano: ${year}] ` + notes;
-      }
+      const notes = el('#bkNotes').value.trim() || null;
+      
       const book = {
         isbn: el('#bkIsbn').value.trim() || null,
         title: el('#bkTitle').value.trim(),
         author: el('#bkAuthor').value.trim() || null,
-        category: genre, // Salva o gênero em category
-        notes: notes || null,
+        category: genre, // Mantém compatibilidade
+        year: year, // Campo separado para o ano
+        genre: genre, // Campo separado para o gênero
+        notes: notes,
         quantity: parseInt(el('#bkQty').value || '0', 10),
         user_id: session.user.id
       };
@@ -808,33 +817,40 @@ create index if not exists books_isbn_idx on public.books (isbn);
     }
 
     function openEdit(book){
+      ensureClient();
+      if(!session){ return toast('Faça login primeiro.'); }
+      // Verificar se o usuário é o dono do livro
+      if(book.user_id !== session.user.id){ 
+        return toast('Você só pode editar seus próprios livros.'); 
+      }
       currentEditId = book.id;
-  el('#edIsbn').value = book.isbn || '';
-  el('#edTitle').value = book.title || '';
-  el('#edAuthor').value = book.author || '';
-  el('#edYear').value = book.year || '';
-  el('#edGenre').value = book.genre || '';
-  el('#edQty').value = book.quantity || 0;
-  el('#edNotes').value = book.notes || '';
-  el('#modalEdit').classList.add('open');
+      el('#edIsbn').value = book.isbn || '';
+      el('#edTitle').value = book.title || '';
+      el('#edAuthor').value = book.author || '';
+      el('#edYear').value = book.year || '';
+      el('#edGenre').value = book.genre || book.category || ''; // Tenta genre primeiro, depois category para compatibilidade
+      el('#edQty').value = book.quantity || 0;
+      el('#edNotes').value = book.notes || '';
+      el('#modalEdit').classList.add('open');
     }
 
     async function saveEdit(){
       ensureClient();
+      if(!session){ return toast('Faça login primeiro.'); }
       if(!currentEditId) return;
-      // Ajuste: enviar apenas campos existentes na tabela books
+      // Capturar ano e gênero dos campos
       const year = el('#edYear').value ? parseInt(el('#edYear').value, 10) : null;
       const genre = el('#edGenre').value || null;
-      let notes = el('#edNotes').value.trim() || '';
-      if (year) {
-        notes = `[Ano: ${year}] ` + notes;
-      }
+      const notes = el('#edNotes').value.trim() || null;
+      
       const upd = {
         isbn: el('#edIsbn').value.trim() || null,
         title: el('#edTitle').value.trim(),
         author: el('#edAuthor').value.trim() || null,
-        category: genre, // Salva o gênero em category
-        notes: notes || null,
+        category: genre, // Mantém compatibilidade
+        year: year, // Campo separado para o ano
+        genre: genre, // Campo separado para o gênero
+        notes: notes,
         quantity: parseInt(el('#edQty').value || '0', 10),
       };
       const { error } = await supabaseClient.from('books').update(upd).eq('id', currentEditId);
