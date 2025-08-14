@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Inventário de Biblioteca</title>
   <!-- Supabase JS -->
   <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -529,15 +531,15 @@ create index if not exists books_isbn_idx on public.books (isbn);
                 <option value="TERROR">Terror</option>
               </select>
             </div>
-            <tr>
-              <th data-sort="isbn">ISBN</th>
-              <th data-sort="title">Título</th>
-              <th data-sort="author">Autor</th>
-              <th data-sort="year">Ano</th>
-              <th class="right" data-sort="quantity">Qtd.</th>
-              <th>Gênero</th>
-              <th class="right">Ações</th>
-            </tr>
+            <div>
+              <label>Quantidade *</label>
+              <input id="edQty" type="number" min="0" value="1" />
+            </div>
+          </div>
+          <div class="grid" style="grid-column: 1 / -1;">
+            <label>Notas</label>
+            <textarea id="edNotes" rows="2" placeholder="Observações..."></textarea>
+          </div>
           <div class="stack" style="justify-content:flex-end; margin-top:10px">
             <button id="btnSaveEdit" class="primary">Salvar</button>
             <button id="btnCancelEdit" class="ghost">Cancelar</button>
@@ -576,15 +578,39 @@ create index if not exists books_isbn_idx on public.books (isbn);
   </div>
 
   <script>
-    let supabaseClient = null;
-    let session = null;
-    let booksCache = [];
-    let currentEditId = null;
-    let currentMove = { type: 'checkout', book: null };
-    let sortState = { field: 'created_at', dir: 'desc' };
+    // Proteção contra interferência de extensões
+    (function() {
+      'use strict';
+      
+      // Variáveis isoladas no escopo
+      let supabaseClient = null;
+      let session = null;
+      let booksCache = [];
+      let currentEditId = null;
+      let currentMove = { type: 'checkout', book: null };
+      let sortState = { field: 'created_at', dir: 'desc' };
 
-    const el = sel => document.querySelector(sel);
-    const els = sel => [...document.querySelectorAll(sel)];
+    const el = sel => {
+      try {
+        const element = document.querySelector(sel);
+        if (!element) {
+          console.warn(`Element not found: ${sel}`);
+          return { value: '', textContent: '', classList: { add: () => {}, remove: () => {} } };
+        }
+        return element;
+      } catch (e) {
+        console.error(`Error selecting element ${sel}:`, e);
+        return { value: '', textContent: '', classList: { add: () => {}, remove: () => {} } };
+      }
+    };
+    const els = sel => {
+      try {
+        return [...document.querySelectorAll(sel)];
+      } catch (e) {
+        console.error(`Error selecting elements ${sel}:`, e);
+        return [];
+      }
+    };
     const toast = (msg) => { const t = el('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=> t.classList.remove('show'), 2400); };
 
     function ensureClient(){
@@ -738,45 +764,60 @@ create index if not exists books_isbn_idx on public.books (isbn);
     }
 
     function renderBooks(){
-      const q = el('#search').value?.toLowerCase() || '';
-      const tbody = el('#tblBooks tbody');
-      tbody.innerHTML = '';
-      const rows = booksCache.filter(b => (
-        `${b.title} ${b.author||''} ${b.isbn||''} ${b.year||''} ${b.genre||b.category||''}`.toLowerCase().includes(q)
-      ));
-      el('#totalBadge').textContent = `${rows.length} itens`;
-      for(const b of rows){
-        const tr = document.createElement('tr');
-        const qtyClass = b.quantity <= 1 ? 'qty-low' : 'qty-ok';
-        // Busca o email do colaborador se for o usuário logado
-        let colaborador = '—';
-        if (b.user_id && session && session.user && b.user_id === session.user.id) {
-          colaborador = session.user.email;
-        } else if (b.user_email) {
-          colaborador = b.user_email;
-        }
-        // Botões de ação baseados na propriedade do livro
-        let actionButtons = `
-            <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
-            <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>`;
-        
-        // Só mostra botões de editar e excluir para livros do usuário logado
-        if (session && session.user && b.user_id === session.user.id) {
-          actionButtons += `
-            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
-            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>`;
+      try {
+        const q = el('#search').value?.toLowerCase() || '';
+        const tbody = el('#tblBooks tbody');
+        if (!tbody || typeof tbody.innerHTML === 'undefined') {
+          console.error('Table tbody not found or invalid');
+          return;
         }
         
-        tr.innerHTML = `
-          <td>${escapeHtml(b.isbn||'—')}</td>
-          <td>${escapeHtml(b.title)}</td>
-          <td>${escapeHtml(b.author||'—')}</td>
-          <td>${escapeHtml(b.year||'—')}</td>
-          <td>${escapeHtml(b.genre||b.category||'—')}</td>
-          <td class="right ${qtyClass}">${b.quantity}</td>
-          <td>${escapeHtml(colaborador)}</td>
-          <td class="right">${actionButtons}</td>`;
-        tbody.appendChild(tr);
+        tbody.innerHTML = '';
+        const rows = booksCache.filter(b => (
+          `${b.title} ${b.author||''} ${b.isbn||''} ${b.year||''} ${b.genre||b.category||''}`.toLowerCase().includes(q)
+        ));
+        
+        const totalBadge = el('#totalBadge');
+        if (totalBadge) {
+          totalBadge.textContent = `${rows.length} itens`;
+        }
+        
+        for(const b of rows){
+          const tr = document.createElement('tr');
+          const qtyClass = b.quantity <= 1 ? 'qty-low' : 'qty-ok';
+          // Busca o email do colaborador se for o usuário logado
+          let colaborador = '—';
+          if (b.user_id && session && session.user && b.user_id === session.user.id) {
+            colaborador = session.user.email;
+          } else if (b.user_email) {
+            colaborador = b.user_email;
+          }
+          // Botões de ação baseados na propriedade do livro
+          let actionButtons = `
+              <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
+              <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>`;
+          
+          // Só mostra botões de editar e excluir para livros do usuário logado
+          if (session && session.user && b.user_id === session.user.id) {
+            actionButtons += `
+              <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
+              <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>`;
+          }
+          
+          tr.innerHTML = `
+            <td>${escapeHtml(b.isbn||'—')}</td>
+            <td>${escapeHtml(b.title)}</td>
+            <td>${escapeHtml(b.author||'—')}</td>
+            <td>${escapeHtml(b.year||'—')}</td>
+            <td>${escapeHtml(b.genre||b.category||'—')}</td>
+            <td class="right ${qtyClass}">${b.quantity}</td>
+            <td>${escapeHtml(colaborador)}</td>
+            <td class="right">${actionButtons}</td>`;
+          tbody.appendChild(tr);
+        }
+      } catch (error) {
+        console.error('Error in renderBooks:', error);
+        toast('Erro ao renderizar a lista de livros');
       }
     }
 
@@ -971,7 +1012,38 @@ create index if not exists books_isbn_idx on public.books (isbn);
     }
 
     // Event bindings
+    document.addEventListener('DOMContentLoaded', function() {
+      // Aguarda o DOM estar completamente carregado
+      setTimeout(function() {
+        try {
+          // Inicialização segura dos event listeners
+          const searchInput = el('#search');
+          if (searchInput && typeof searchInput.addEventListener === 'function') {
+            searchInput.addEventListener('input', debounce(renderBooks, 150));
+          }
+          
+          const sortHeaders = els('th[data-sort]');
+          sortHeaders.forEach(th => {
+            if (th && typeof th.addEventListener === 'function') {
+              th.addEventListener('click', () => sortBy(th.dataset.sort));
+            }
+          });
+          
+          // Busca ISBN ao digitar
+          const isbnInput = el('#bkIsbn');
+          if (isbnInput && typeof isbnInput.addEventListener === 'function') {
+            isbnInput.addEventListener('blur', (e) => {
+              checkISBNApi(e.target.value);
+            });
+          }
+        } catch (error) {
+          console.error('Error initializing event listeners:', error);
+        }
+      }, 100);
+    });
+
     document.addEventListener('click', (e) => {
+      try {
       if(e.target.closest('#btnConnect')) connect();
       if(e.target.closest('#btnSignup')) signup();
       if(e.target.closest('#btnLogin')) login();
@@ -985,6 +1057,9 @@ create index if not exists books_isbn_idx on public.books (isbn);
       if(e.target.closest('#btnCancelMove')) el('#modalMove').classList.remove('open');
       if(e.target.closest('#export-xls')) exportXLS();
       if(e.target.closest('#export-pdf')) exportPDF();
+      } catch (error) {
+        console.error('Error handling click event:', error);
+      }
     });
 
     el('#search').addEventListener('input', debounce(renderBooks, 150));
@@ -996,6 +1071,13 @@ create index if not exists books_isbn_idx on public.books (isbn);
     });
 
     function debounce(fn, ms){ let t; return (...args) => { clearTimeout(t); t = setTimeout(()=> fn.apply(this,args), ms); } }
+
+    // Expor funções globais necessárias
+    window.openEdit = openEdit;
+    window.openMove = openMove;
+    window.delBook = delBook;
+    
+    })(); // Fim do escopo isolado
   </script>
 </body>
 </html>
