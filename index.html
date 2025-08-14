@@ -793,9 +793,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
             colaborador = b.user_email;
           }
           // Botões de ação baseados na propriedade do livro
-          let actionButtons = `
-              <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
-              <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>`;
+          let actionButtons = '';
           
           // Só mostra botões de editar e excluir para livros do usuário logado
           if (session && session.user && b.user_id === session.user.id) {
