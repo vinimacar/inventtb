@@ -1,0 +1,9 @@
+# Arquivos e pastas a serem ignorados pelo Git
+.env
+*.log
+node_modules/
+.DS_Store
+*.sqlite
+*.bak
+*.tmp
+.vscode/

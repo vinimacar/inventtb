@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventário de Biblioteca</title>
+  <!-- Supabase JS -->
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- SheetJS (XLS) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- jsPDF (PDF) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0f1c;
+      --card: rgba(20, 30, 50, 0.85);
+      --muted: #3a4369;
+      --text: #e5e7eb;
+      --accent: #00ffe7;
+      --accent2: #7f5cff;
+      --danger: #ff3c6a;
+      --warn: #f59e0b;
+      --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      --radius: 18px;
+      --glass: rgba(20, 30, 50, 0.55);
+      --neon: 0 0 8px var(--accent), 0 0 16px var(--accent2);
+      --font: 'Orbitron', 'Segoe UI', 'Arial', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: linear-gradient(135deg, #0a0f1c 0%, #1a1f3c 100%);
+      color: var(--text);
+      min-height: 100vh;
+      background-attachment: fixed;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    header {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    h1 {
+      font-size: 32px;
+      margin: 0;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent2), 0 0 2px #fff;
+      font-family: var(--font);
+    }
+    .card {
+      background: var(--glass);
+      border: 1.5px solid var(--accent2);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px) saturate(120%);
+      margin-bottom: 18px;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover {
+      box-shadow: 0 0 24px 0 var(--accent2), var(--shadow);
+    }
+    .grid { display: grid; gap: 16px; }
+    .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .stack { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    label {
+      font-size: 13px;
+      color: var(--accent2);
+      letter-spacing: 1px;
+      text-shadow: 0 0 2px var(--accent);
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(10, 20, 40, 0.7);
+      border: 1.5px solid var(--accent2);
+      border-radius: 12px;
+      color: var(--text);
+      outline: none;
+      font-family: var(--font);
+      font-size: 15px;
+      box-shadow: 0 0 0 0 var(--accent2);
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border: 1.5px solid var(--accent);
+      box-shadow: 0 0 8px 0 var(--accent);
+    }
+    input::placeholder, textarea::placeholder {
+      color: #7f8fa6;
+      opacity: 0.8;
+      font-style: italic;
+    }
+    button {
+      border: none;
+      background: linear-gradient(90deg, var(--accent2) 0%, var(--accent) 100%);
+      color: #0a0f1c;
+      padding: 12px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: 0 0 8px 0 var(--accent2);
+      letter-spacing: 1px;
+      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+      outline: none;
+    }
+    button:hover, button:focus {
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      box-shadow: 0 0 16px 0 var(--accent);
+    }
+    button.ghost {
+      background: transparent;
+      border: 1.5px solid var(--accent2);
+      color: var(--accent2);
+      box-shadow: none;
+    }
+    button.ghost:hover {
+      background: var(--accent2);
+      color: #fff;
+      box-shadow: 0 0 8px 0 var(--accent2);
+    }
+    button.warn {
+      background: linear-gradient(90deg, #f59e0b 0%, #ffb347 100%);
+      color: #1e1e1e;
+    }
+    button.danger {
+      background: linear-gradient(90deg, var(--danger) 0%, #ffb6c1 100%);
+      color: #fff;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .toolbar .search { flex: 1 1 280px; display: flex; gap: 10px; align-items: center; }
+    .toolbar input { flex: 1; }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 10px;
+      background: rgba(20, 30, 50, 0.7);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 0 12px 0 var(--accent2);
+    }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1.5px solid var(--accent2);
+      text-align: left;
+      font-size: 15px;
+    }
+    th {
+      color: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      text-shadow: 0 0 2px var(--accent2);
+      background: rgba(20, 30, 50, 0.8);
+    }
+    tr:hover {
+      background: rgba(0,255,231,0.07);
+    }
+    .badge {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      background: rgba(0,255,231,0.08);
+      text-shadow: 0 0 4px var(--accent2);
+      font-family: var(--font);
+      letter-spacing: 1px;
+      box-shadow: 0 0 8px 0 var(--accent2);
+    }
+    .qty-low { color: #ff3c6a; font-weight: bold; text-shadow: 0 0 4px #ff3c6a; }
+    .qty-ok { color: #00ffe7; font-weight: bold; text-shadow: 0 0 4px #00ffe7; }
+    .right { text-align: right; }
+
+    .auth, .book-form, .books { margin-bottom: 18px; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,20,40,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .modal.open { display: flex; }
+    .modal .panel {
+      width: 100%;
+      max-width: 560px;
+      background: var(--glass);
+      border: 1.5px solid var(--accent2);
+      border-radius: 20px;
+      box-shadow: 0 0 32px 0 var(--accent2), var(--shadow);
+      backdrop-filter: blur(12px) saturate(120%);
+      animation: popin 0.3s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    @keyframes popin {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .panel header {
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--accent2);
+      color: var(--accent);
+      font-size: 18px;
+      font-family: var(--font);
+      letter-spacing: 1px;
+      text-shadow: 0 0 4px var(--accent2);
+    }
+    .panel main { padding: 20px; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--glass);
+      color: var(--accent);
+      border: 1.5px solid var(--accent2);
+      padding: 14px 22px;
+      border-radius: 16px;
+      box-shadow: 0 0 16px 0 var(--accent2), var(--shadow);
+      display: none;
+      font-family: var(--font);
+      font-size: 15px;
+      text-shadow: 0 0 4px var(--accent2);
+      z-index: 2000;
+    }
+    .toast.show { display: block; }
+
+    .muted { color: #7f8fa6; }
+    .small { font-size: 12px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+    @media (max-width: 760px){
+      .grid.cols-3 { grid-template-columns: 1fr; }
+      .grid.cols-2 { grid-template-columns: 1fr; }
+      header { grid-template-columns: 1fr; }
+      .container { padding: 0 4px; }
+    }
+
+    pre {
+      background: rgba(10,20,40,0.7);
+      border: 1.5px solid var(--accent2);
+      padding: 14px;
+      border-radius: 14px;
+      overflow:auto;
+      color: var(--accent2);
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    /* Google Fonts Orbitron */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📚 Inventário de Biblioteca</h1>
+      <div class="stack" id="authStatus">
+        <span class="badge">Desconectado</span>
+        <button class="primary" id="btnOpenAuth">Entrar</button>
+      </div>
+    </header>
+
+    <details class="card" open>
+      <summary><strong>⚙️ Passos de Configuração (Supabase)</strong></summary>
+      <div class="grid" style="margin-top:10px">
+        <ol>
+          <li>Crie um projeto em <em>app.supabase.com</em>.</li>
+          <li>Em <strong>SQL Editor</strong>, rode o script abaixo para criar as tabelas.</li>
+          <li>Em <strong>Authentication → Providers</strong>, habilite <em>Email</em>.</li>
+          <li>Em <strong>Authentication → Policies</strong> (ou via SQL), habilite as políticas RLS do script.</li>
+          <li>Copie <strong>Project URL</strong> e <strong>anon public key</strong> em <em>Project Settings → API</em> e cole nos campos abaixo.</li>
+          <li>Crie um usuário (signup) e faça login para usar o app.</li>
+        </ol>
+        <div>
+          <label class="small muted">SQL: Tabelas & Políticas (cole no SQL Editor)</label>
+          <pre><code>-- Habilite a extensão pgcrypto se necessário
+-- create extension if not exists pgcrypto;
+
+-- Tabela de livros
+create table if not exists public.books (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamp with time zone default now(),
+  title text not null,
+  author text,
+  isbn text,
+  category text,
+  location text,
+  notes text,
+  quantity integer not null default 1,
+  user_id uuid references auth.users(id) not null
+);
+
+-- Movimentações (saída/entrada)
+create table if not exists public.movements (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamp with time zone default now(),
+  book_id uuid references public.books(id) on delete cascade,
+  type text check (type in ('checkout','return')) not null,
+  qty integer not null check (qty > 0),
+  borrower text,
+  due_date date,
+  returned_at timestamp with time zone,
+  user_id uuid references auth.users(id) not null
+);
+
+-- RLS
+alter table public.books enable row level security;
+alter table public.movements enable row level security;
+
+-- Políticas simples: qualquer usuário autenticado pode CRUD (ajuste para sua realidade)
+create policy "books_read" on public.books for select to authenticated using (true);
+create policy "books_insert" on public.books for insert to authenticated with check (auth.uid() = user_id);
+create policy "books_update" on public.books for update to authenticated using (auth.uid() = user_id);
+create policy "books_delete" on public.books for delete to authenticated using (auth.uid() = user_id);
+
+create policy "mov_read"   on public.movements for select to authenticated using (true);
+create policy "mov_insert" on public.movements for insert  to authenticated with check (auth.uid() = user_id);
+
+-- Índices úteis
+create index if not exists books_title_idx on public.books using gin (to_tsvector('portuguese', coalesce(title,'') || ' ' || coalesce(author,'')));
+create index if not exists books_isbn_idx on public.books (isbn);
+</code></pre>
+        </div>
+      </div>
+    </details>
+
+    <section class="card">
+      <div class="grid cols-2">
+        <div>
+          <label>Supabase URL</label>
+          <input id="supabaseUrl" placeholder="https://YOUR-PROJECT.supabase.co" />
+        </div>
+        <div>
+          <label>Supabase anon key</label>
+          <input id="supabaseKey" placeholder="eyJhbGciOi..." />
+        </div>
+      </div>
+      <div class="stack" style="justify-content: flex-end; margin-top:10px">
+        <button id="btnConnect" class="primary">Conectar</button>
+      </div>
+    </section>
+
+    <section class="card auth">
+      <div class="grid cols-3">
+        <div>
+          <label>Email</label>
+          <input id="authEmail" type="email" placeholder="seu@email.com" />
+        </div>
+        <div>
+          <label>Senha</label>
+          <input id="authPassword" type="password" placeholder="••••••••" />
+        </div>
+        <div class="stack" style="align-items:flex-end;">
+          <button id="btnSignup">Cadastrar</button>
+          <button id="btnLogin" class="primary">Entrar</button>
+          <button id="btnLogout" class="ghost">Sair</button>
+        </div>
+      </div>
+      <p class="small muted" style="margin-top:8px">Dica: cadastre-se primeiro; depois faça login. A política RLS usa seu <code>user_id</code>.</p>
+    </section>
+
+    <section class="card book-form">
+      <h3 style="margin-top:0">➕ Novo Livro</h3>
+      <div class="grid cols-3">
+        <div>
+          <label>ISBN</label>
+          <input id="bkIsbn" placeholder="Ex.: 978-8576081739" />
+        </div>
+        <div>
+          <label>Título *</label>
+          <input id="bkTitle" placeholder="Ex.: Estruturas de Dados" />
+        </div>
+        <div>
+          <label>Autor</label>
+          <input id="bkAuthor" placeholder="Ex.: Cormen et al." />
+        </div>
+        <div>
+          <label>Ano de Publicação</label>
+          <input id="bkYear" type="number" min="0" max="2100" placeholder="Ex.: 2020" />
+        </div>
+        <div>
+          <label>Gênero</label>
+          <select id="bkGenre">
+            <option value="">Selecione...</option>
+            <option value="ACADEMICO">Acadêmico</option>
+            <option value="AUTOAJUDA">Autoajuda</option>
+            <option value="AVENTURA">Aventura</option>
+            <option value="BIOGRAFIA">Biografia</option>
+            <option value="CIENCIAS">Ciências</option>
+            <option value="DIDATICO">Didático</option>
+            <option value="DRAMA">Drama</option>
+            <option value="EDUCACAO">Educação</option>
+            <option value="FANTASIA">Fantasia</option>
+            <option value="FICCAO">Ficção</option>
+            <option value="FICCAO_CIENTIFICA">Ficção Científica</option>
+            <option value="HISTORIA">História</option>
+            <option value="INFANTIL">Infantil</option>
+            <option value="JUVENIL">Juvenil</option>
+            <option value="LITERATURA">Literatura</option>
+            <option value="MISTERIO">Mistério</option>
+            <option value="NAO_FICCAO">Não Ficção</option>
+            <option value="OUTROS">Outros</option>
+            <option value="POESIA">Poesia</option>
+            <option value="ROMANCE">Romance</option>
+            <option value="TECNOLOGIA">Tecnologia</option>
+            <option value="TECNICO">Técnico</option>
+            <option value="TERROR">Terror</option>
+          </select>
+        </div>
+        <div>
+          <label>Quantidade *</label>
+          <input id="bkQty" type="number" min="0" value="1" />
+        </div>
+        <div class="grid" style="grid-column: 1 / -1;">
+          <label>Notas</label>
+          <textarea id="bkNotes" rows="2" placeholder="Observações..."></textarea>
+        </div>
+      </div>
+      <div class="stack" style="justify-content:flex-end; margin-top:10px">
+        <button id="btnAdd" class="primary">Adicionar</button>
+        <button id="btnClear" class="ghost">Limpar</button>
+      </div>
+    </section>
+
+    <section class="card books">
+      <div class="toolbar">
+        <div class="search">
+          <input id="search" placeholder="Buscar por título/autor/ISBN..." />
+        </div>
+        <div class="stack">
+          <span class="badge" id="totalBadge">0 itens</span>
+          <button id="btnRefresh" class="ghost">Atualizar</button>
+          <button id="export-xls" class="ghost">Exportar XLS</button>
+          <button id="export-pdf" class="ghost">Exportar PDF</button>
+        </div>
+      </div>
+      <table id="tblBooks">
+        <thead>
+          <tr>
+            <th data-sort="isbn">ISBN</th>
+            <th data-sort="title">Título</th>
+            <th data-sort="author">Autor</th>
+            <th data-sort="year">Ano</th>
+            <th>Gênero</th>
+            <th class="right" data-sort="quantity">Qtd.</th>
+            <th>Colaborador</th>
+            <th class="right">Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <div class="modal" id="modalEdit">
+      <div class="panel">
+        <header><strong>Editar Livro</strong></header>
+        <main>
+          <div class="grid cols-2">
+            <div>
+              <label>ISBN</label>
+              <input id="edIsbn" />
+            </div>
+            <div>
+              <label>Título</label>
+              <input id="edTitle" />
+            </div>
+            <div>
+              <label>Autor</label>
+              <input id="edAuthor" />
+            </div>
+            <div>
+              <label>Ano de Publicação</label>
+              <input id="edYear" type="number" min="0" max="2100" />
+            </div>
+            <div>
+              <label>Gênero</label>
+              <select id="edGenre">
+                <option value="">Selecione...</option>
+                <option value="ACADEMICO">Acadêmico</option>
+                <option value="AUTOAJUDA">Autoajuda</option>
+                <option value="AVENTURA">Aventura</option>
+                <option value="BIOGRAFIA">Biografia</option>
+                <option value="CIENCIAS">Ciências</option>
+                <option value="DIDATICO">Didático</option>
+                <option value="DRAMA">Drama</option>
+                <option value="EDUCACAO">Educação</option>
+                <option value="FANTASIA">Fantasia</option>
+                <option value="FICCAO">Ficção</option>
+                <option value="FICCAO_CIENTIFICA">Ficção Científica</option>
+                <option value="HISTORIA">História</option>
+                <option value="INFANTIL">Infantil</option>
+                <option value="JUVENIL">Juvenil</option>
+                <option value="LITERATURA">Literatura</option>
+                <option value="MISTERIO">Mistério</option>
+                <option value="NAO_FICCAO">Não Ficção</option>
+                <option value="OUTROS">Outros</option>
+                <option value="POESIA">Poesia</option>
+                <option value="ROMANCE">Romance</option>
+                <option value="TECNOLOGIA">Tecnologia</option>
+                <option value="TECNICO">Técnico</option>
+                <option value="TERROR">Terror</option>
+              </select>
+            </div>
+            <tr>
+              <th data-sort="isbn">ISBN</th>
+              <th data-sort="title">Título</th>
+              <th data-sort="author">Autor</th>
+              <th data-sort="year">Ano</th>
+              <th class="right" data-sort="quantity">Qtd.</th>
+              <th>Gênero</th>
+              <th class="right">Ações</th>
+            </tr>
+          <div class="stack" style="justify-content:flex-end; margin-top:10px">
+            <button id="btnSaveEdit" class="primary">Salvar</button>
+            <button id="btnCancelEdit" class="ghost">Cancelar</button>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal" id="modalMove">
+      <div class="panel">
+        <header><strong id="mvTitle">Registrar Saída</strong></header>
+        <main>
+          <div class="grid cols-2">
+            <div>
+              <label>Quantidade</label>
+              <input id="mvQty" type="number" min="1" value="1" />
+            </div>
+            <div>
+              <label>Leitor (opcional)</label>
+              <input id="mvBorrower" placeholder="Nome do leitor" />
+            </div>
+            <div>
+              <label>Devolver até (opcional)</label>
+              <input id="mvDue" type="date" />
+            </div>
+          </div>
+          <div class="stack" style="justify-content:flex-end; margin-top:10px">
+            <button id="btnConfirmMove" class="primary">Confirmar</button>
+            <button id="btnCancelMove" class="ghost">Cancelar</button>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    let supabaseClient = null;
+    let session = null;
+    let booksCache = [];
+    let currentEditId = null;
+    let currentMove = { type: 'checkout', book: null };
+    let sortState = { field: 'created_at', dir: 'desc' };
+
+    const el = sel => document.querySelector(sel);
+    const els = sel => [...document.querySelectorAll(sel)];
+    const toast = (msg) => { const t = el('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=> t.classList.remove('show'), 2400); };
+
+    function ensureClient(){
+      if (supabaseClient) return supabaseClient;
+      const url = el('#supabaseUrl').value.trim();
+      const key = el('#supabaseKey').value.trim();
+      if(!url || !key){ toast('Informe URL e anon key do Supabase.'); throw new Error('Missing supabase creds'); }
+      supabaseClient = window.supabase.createClient(url, key);
+      return supabaseClient;
+    }
+
+    function setAuthUI(){
+      const status = el('#authStatus');
+      status.innerHTML = '';
+      if(session && session.user){
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = `Conectado: ${session.user.email}`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Sair';
+        btn.className = 'ghost';
+        btn.onclick = logout;
+        status.append(span, btn);
+      } else {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = 'Desconectado';
+        const btn = document.createElement('button');
+        btn.textContent = 'Entrar';
+        btn.className = 'primary';
+        btn.onclick = () => el('#authEmail').focus();
+        status.append(span, btn);
+      }
+    }
+
+    async function connect(){
+      try {
+        ensureClient();
+        const { data } = await supabaseClient.auth.getSession();
+        session = data.session;
+        setAuthUI();
+        listenAuth();
+        if(session){ await loadBooks(); subscribeBooks(); }
+        toast('Conexão OK.');
+      } catch(e){ console.error(e); }
+    }
+
+    function listenAuth(){
+      supabaseClient.auth.onAuthStateChange((_event, s) => {
+        session = s?.session ?? s; 
+        setAuthUI();
+        if(session){ loadBooks(); subscribeBooks(); }
+        else { booksCache = []; renderBooks(); }
+      });
+    }
+
+    async function signup(){
+      ensureClient();
+      const email = el('#authEmail').value.trim();
+      const password = el('#authPassword').value;
+      if(!email || !password) return toast('Preencha email e senha.');
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if(error) return toast(error.message);
+      toast('Cadastro realizado. Verifique seu email (se exigido).');
+    }
+
+    async function login(){
+      ensureClient();
+      const email = el('#authEmail').value.trim();
+      const password = el('#authPassword').value;
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if(error) return toast(error.message);
+      session = data.session;
+      setAuthUI();
+      await loadBooks();
+      subscribeBooks();
+    }
+// Busca dados do ISBN na API da Biblioteca Nacional
+    async function fetchBookByISBN(isbn) {
+      if (!isbn) return null;
+      const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '');
+      if (cleanIsbn.length < 10) return null;
+      try {
+        const resp = await fetch(`https://servicos.bn.gov.br/api/consulta/isbn/${cleanIsbn}`);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data[0];
+        }
+        return null;
+      } catch (e) {
+        // Falha de rede ou resposta inesperada
+        return null;
+      }
+    }
+
+    // Organiza a busca e preenchimento de campos pelo ISBN
+    async function checkISBNApi(isbn) {
+      if (!isbn) return;
+      const livro = await fetchBookByISBN(isbn);
+      if (livro) {
+        toast('ISBN já cadastrado na Biblioteca Nacional!');
+        if (livro.titulo) el('#bkTitle').value = livro.titulo;
+        if (livro.autor) el('#bkAuthor').value = Array.isArray(livro.autor) ? livro.autor.join('; ') : livro.autor;
+        if (livro.ano) el('#bkYear').value = livro.ano;
+      }
+    }
+    async function logout(){
+      ensureClient();
+      await supabaseClient.auth.signOut();
+      session = null;
+      setAuthUI();
+      booksCache = []; renderBooks();
+    }
+
+    async function loadBooks(){
+      ensureClient();
+      const { data, error } = await supabaseClient
+        .from('books')
+        .select('*')
+        .order(sortState.field, { ascending: sortState.dir === 'asc' });
+      if(error){ console.error(error); toast(error.message); return; }
+      booksCache = data || [];
+      renderBooks();
+    }
+
+    function subscribeBooks(){
+      try{
+        supabaseClient.channel('books-changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, () => loadBooks())
+          .subscribe();
+      } catch(e){ console.warn('Realtime unavailable', e); }
+    }
+
+    function renderBooks(){
+      const q = el('#search').value?.toLowerCase() || '';
+      const tbody = el('#tblBooks tbody');
+      tbody.innerHTML = '';
+      const rows = booksCache.filter(b => (
+        `${b.title} ${b.author||''} ${b.isbn||''}`.toLowerCase().includes(q)
+      ));
+      el('#totalBadge').textContent = `${rows.length} itens`;
+      for(const b of rows){
+        const tr = document.createElement('tr');
+        const qtyClass = b.quantity <= 1 ? 'qty-low' : 'qty-ok';
+        // Busca o email do colaborador se for o usuário logado
+        let colaborador = '—';
+        if (b.user_id && session && session.user && b.user_id === session.user.id) {
+          colaborador = session.user.email;
+        } else if (b.user_email) {
+          colaborador = b.user_email;
+        }
+        tr.innerHTML = `
+          <td>${escapeHtml(b.isbn||'—')}</td>
+          <td>${escapeHtml(b.title)}</td>
+          <td>${escapeHtml(b.author||'—')}</td>
+          <td>${escapeHtml(b.year||'—')}</td>
+          <td>${escapeHtml(b.genre||'—')}</td>
+          <td class="right ${qtyClass}">${b.quantity}</td>
+          <td>${escapeHtml(colaborador)}</td>
+          <td class="right">
+            <button title="Emprestar" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"checkout")'>↗️</button>
+            <button title="Devolver" class="warn" onclick='openMove(${JSON.stringify({id:b.id,title:b.title})},"return")'>↩️</button>
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function escapeHtml(str){ return (str+"").replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m])); }
+
+    async function addBook(){
+      ensureClient();
+      if(!session){ return toast('Faça login primeiro.'); }
+      const book = {
+        isbn: el('#bkIsbn').value.trim() || null,
+        title: el('#bkTitle').value.trim(),
+        author: el('#bkAuthor').value.trim() || null,
+        year: el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null,
+        genre: el('#bkGenre').value || null,
+        notes: el('#bkNotes').value.trim() || null,
+        quantity: parseInt(el('#bkQty').value || '0', 10),
+        user_id: session.user.id,
+        user_email: session.user.email,
+      };
+      if(!book.title) return toast('Informe o título.');
+      if(book.quantity < 0) return toast('Quantidade inválida.');
+      const { error } = await supabaseClient.from('books').insert(book);
+      if(error) return toast(error.message);
+      toast('Livro adicionado.');
+      clearForm();
+      await loadBooks();
+    }
+
+    function clearForm(){
+  ['#bkTitle','#bkAuthor','#bkIsbn','#bkYear','#bkNotes'].forEach(s => el(s).value = '');
+  el('#bkGenre').value = '';
+  el('#bkQty').value = 1;
+    }
+
+    function openEdit(book){
+      currentEditId = book.id;
+  el('#edIsbn').value = book.isbn || '';
+  el('#edTitle').value = book.title || '';
+  el('#edAuthor').value = book.author || '';
+  el('#edYear').value = book.year || '';
+  el('#edGenre').value = book.genre || '';
+  el('#edQty').value = book.quantity || 0;
+  el('#edNotes').value = book.notes || '';
+  el('#modalEdit').classList.add('open');
+    }
+
+    async function saveEdit(){
+      ensureClient();
+      if(!currentEditId) return;
+      const upd = {
+        isbn: el('#edIsbn').value.trim() || null,
+        title: el('#edTitle').value.trim(),
+        author: el('#edAuthor').value.trim() || null,
+        year: el('#edYear').value ? parseInt(el('#edYear').value, 10) : null,
+        genre: el('#edGenre').value || null,
+        notes: el('#edNotes').value.trim() || null,
+        quantity: parseInt(el('#edQty').value || '0', 10),
+      };
+      const { error } = await supabaseClient.from('books').update(upd).eq('id', currentEditId);
+      if(error) return toast(error.message);
+      toast('Alterações salvas.');
+      el('#modalEdit').classList.remove('open');
+      currentEditId = null;
+      await loadBooks();
+    }
+
+    async function delBook(id){
+      ensureClient();
+      if(!confirm('Excluir este livro?')) return;
+      const { error } = await supabaseClient.from('books').delete().eq('id', id);
+      if(error) return toast(error.message);
+      toast('Livro excluído.');
+      await loadBooks();
+    }
+
+    function openMove(bookRef, type){
+      currentMove = { type, book: bookRef };
+      el('#mvTitle').textContent = type === 'checkout' ? 'Registrar Saída (empréstimo)' : 'Registrar Devolução';
+      el('#mvQty').value = 1;
+      el('#mvBorrower').value = '';
+      el('#mvDue').value = '';
+      el('#modalMove').classList.add('open');
+    }
+
+    async function confirmMove(){
+      ensureClient();
+      const qty = parseInt(el('#mvQty').value || '1', 10);
+      if(qty <= 0) return toast('Quantidade inválida.');
+      const borrower = el('#mvBorrower').value.trim() || null;
+      const due = el('#mvDue').value ? new Date(el('#mvDue').value).toISOString().slice(0,10) : null;
+
+      const { data: books, error: e1 } = await supabaseClient.from('books').select('id, quantity').eq('id', currentMove.book.id).limit(1);
+      if(e1) return toast(e1.message);
+      const book = books?.[0];
+      if(!book) return toast('Livro não encontrado.');
+
+      let newQty = book.quantity;
+      if(currentMove.type === 'checkout'){
+        if(qty > book.quantity) return toast('Qtd solicitada maior que o estoque.');
+        newQty = book.quantity - qty;
+      } else {
+        newQty = book.quantity + qty;
+      }
+
+      const movement = { book_id: book.id, type: currentMove.type, qty, borrower, due_date: due, user_id: session.user.id };
+      const { error: e2 } = await supabaseClient.from('movements').insert(movement);
+      if(e2) return toast(e2.message);
+
+      const { error: e3 } = await supabaseClient.from('books').update({ quantity: newQty }).eq('id', book.id);
+      if(e3) return toast(e3.message);
+
+      toast(currentMove.type === 'checkout' ? 'Saída registrada.' : 'Devolução registrada.');
+      el('#modalMove').classList.remove('open');
+      await loadBooks();
+    }
+
+    function sortBy(field){
+      if(sortState.field === field){ sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc'; }
+      else { sortState.field = field; sortState.dir = 'asc'; }
+      loadBooks();
+    }
+
+    // ===== EXPORTAÇÕES =====
+    function getFilteredRows(){
+      const q = el('#search').value?.toLowerCase() || '';
+      return booksCache.filter(b => (`${b.title} ${b.author||''} ${b.isbn||''}`.toLowerCase().includes(q)));
+    }
+
+    function exportXLS(){
+      const rows = getFilteredRows();
+      const data = rows.map(b => ({
+        ISBN: b.isbn || '',
+        Título: b.title,
+        Autor: b.author || '',
+        Ano: b.year || '',
+        Gênero: b.genre || '',
+        Quantidade: b.quantity,
+        Colaborador: (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—'),
+        Criado_em: b.created_at?.slice(0,10) || ''
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+      XLSX.writeFile(wb, 'inventario_biblioteca.xlsx');
+    }
+
+    function exportPDF(){
+      const rows = getFilteredRows();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const margin = 40;
+      doc.setFontSize(16);
+      doc.text('Inventário da Biblioteca', margin, 40);
+  const head = [['ISBN','Título','Autor','Ano','Gênero','Qtd.','Colaborador']];
+  const body = rows.map(b => [
+    b.isbn||'',
+    b.title,
+    b.author||'',
+    b.year||'',
+    b.genre||'',
+    String(b.quantity),
+    (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—')
+  ]);
+      if(doc.autoTable){
+        doc.autoTable({
+          head, body, startY: 60, styles: { fontSize: 9 }, headStyles: { fillColor: [34,197,94] }, margin: { left: margin, right: margin }
+        });
+      } else {
+        // fallback simples
+        let y = 60; doc.setFontSize(10);
+        body.forEach(r => { doc.text(r.join(' | '), margin, y); y += 14; if(y > 780){ doc.addPage(); y = 40; } });
+      }
+      doc.save('inventario_biblioteca.pdf');
+    }
+
+    // Event bindings
+    document.addEventListener('click', (e) => {
+      if(e.target.closest('#btnConnect')) connect();
+      if(e.target.closest('#btnSignup')) signup();
+      if(e.target.closest('#btnLogin')) login();
+      if(e.target.closest('#btnLogout')) logout();
+      if(e.target.closest('#btnAdd')) addBook();
+      if(e.target.closest('#btnClear')) clearForm();
+      if(e.target.closest('#btnRefresh')) loadBooks();
+      if(e.target.closest('#btnSaveEdit')) saveEdit();
+      if(e.target.closest('#btnCancelEdit')) el('#modalEdit').classList.remove('open');
+      if(e.target.closest('#btnConfirmMove')) confirmMove();
+      if(e.target.closest('#btnCancelMove')) el('#modalMove').classList.remove('open');
+      if(e.target.closest('#export-xls')) exportXLS();
+      if(e.target.closest('#export-pdf')) exportPDF();
+    });
+
+    el('#search').addEventListener('input', debounce(renderBooks, 150));
+    els('th[data-sort]').forEach(th => th.addEventListener('click', () => sortBy(th.dataset.sort)));
+
+    // Busca ISBN ao digitar
+    el('#bkIsbn').addEventListener('blur', (e) => {
+      checkISBNApi(e.target.value);
+    });
+
+    function debounce(fn, ms){ let t; return (...args) => { clearTimeout(t); t = setTimeout(()=> fn.apply(this,args), ms); } }
+  </script>
+</body>
+</html>
+    
