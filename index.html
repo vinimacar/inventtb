@@ -818,7 +818,6 @@ create index if not exists books_isbn_idx on public.books (isbn);
     async function addBook(){
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
-      // Capturar ano e gênero dos campos
       const title = el('#bkTitle').value.trim();
       const isbn = el('#bkIsbn').value.trim() || null;
       const author = el('#bkAuthor').value.trim() || null;
@@ -843,7 +842,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
         user_id: session.user.id
       };
 
-      // Remove campos nulos para evitar erro
+      // Remove campos nulos ou vazios
       Object.keys(book).forEach(k => (book[k] === null || book[k] === '') && delete book[k]);
 
       const { error } = await supabaseClient.from('books').insert(book);
@@ -881,21 +880,21 @@ create index if not exists books_isbn_idx on public.books (isbn);
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
       if(!currentEditId) return;
-      // Capturar ano e gênero dos campos
       const year = el('#edYear').value ? parseInt(el('#edYear').value, 10) : null;
       const genre = el('#edGenre').value || null;
       const notes = el('#edNotes').value.trim() || null;
-      
+
       const upd = {
         isbn: el('#edIsbn').value.trim() || null,
         title: el('#edTitle').value.trim(),
         author: el('#edAuthor').value.trim() || null,
-        category: genre, // Mantém compatibilidade
-        year: year, // Campo separado para o ano
-        genre: genre, // Campo separado para o gênero
+        year: year,
+        genre: genre,
         notes: notes,
         quantity: parseInt(el('#edQty').value || '0', 10),
       };
+      Object.keys(upd).forEach(k => (upd[k] === null || upd[k] === '') && delete upd[k]);
+
       const { error } = await supabaseClient.from('books').update(upd).eq('id', currentEditId);
       if(error) return toast(error.message);
       toast('Alterações salvas.');
