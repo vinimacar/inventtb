@@ -792,15 +792,11 @@ create index if not exists books_isbn_idx on public.books (isbn);
           } else if (b.user_email) {
             colaborador = b.user_email;
           }
-          // Botões de ação baseados na propriedade do livro
-          let actionButtons = '';
-          
-          // Só mostra botões de editar e excluir para livros do usuário logado
-          if (session && session.user && b.user_id === session.user.id) {
-            actionButtons += `
-              <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
-              <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>`;
-          }
+          // Botões de ação: Editar e Excluir sempre visíveis
+          let actionButtons = `
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>
+          `;
           
           tr.innerHTML = `
             <td>${escapeHtml(b.isbn||'—')}</td>
