@@ -830,20 +830,23 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
       const genre = el('#bkGenre').value || null;
       const notes = el('#bkNotes').value.trim() || null;
-      
+
+      const qtyValue = el('#bkQty').value;
+      const quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
+
       const book = {
         isbn: el('#bkIsbn').value.trim() || null,
         title: el('#bkTitle').value.trim(),
         author: el('#bkAuthor').value.trim() || null,
-        category: genre, // Mantém compatibilidade
-        year: year, // Campo separado para o ano
-        genre: genre, // Campo separado para o gênero
+        category: genre,
+        year: year,
+        genre: genre,
         notes: notes,
-        quantity: parseInt(el('#bkQty').value || '0', 10),
+        quantity: quantity,
         user_id: session.user.id
       };
       if(!book.title) return toast('Informe o título.');
-      if(book.quantity < 0) return toast('Quantidade inválida.');
+      if(isNaN(book.quantity) || book.quantity < 0) return toast('Quantidade inválida.');
       const { error } = await supabaseClient.from('books').insert(book);
       if(error) return toast(error.message);
       toast('Livro adicionado.');
@@ -1081,5 +1084,5 @@ create index if not exists books_isbn_idx on public.books (isbn);
   </script>
 </body>
 </html>
-    
+
 
