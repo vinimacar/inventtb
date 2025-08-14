@@ -785,19 +785,17 @@ create index if not exists books_isbn_idx on public.books (isbn);
         for(const b of rows){
           const tr = document.createElement('tr');
           const qtyClass = b.quantity <= 1 ? 'qty-low' : 'qty-ok';
-          // Busca o email do colaborador se for o usuário logado
           let colaborador = '—';
           if (b.user_id && session && session.user && b.user_id === session.user.id) {
             colaborador = session.user.email;
           } else if (b.user_email) {
             colaborador = b.user_email;
           }
-          // Botões de ação: Editar e Excluir sempre visíveis
+          // Use sempre 'genre' (em inglês)
           let actionButtons = `
             <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
             <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>
           `;
-          
           tr.innerHTML = `
             <td>${escapeHtml(b.isbn||'—')}</td>
             <td>${escapeHtml(b.title)}</td>
