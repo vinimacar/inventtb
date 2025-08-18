@@ -1147,6 +1147,19 @@ create index if not exists books_isbn_idx on public.books (isbn);
       }
     }
 
+    // Função para abrir o modal de movimentação (saída/entrada)
+    function openMove(book) {
+      ensureClient();
+      if (!session) return toast('Faça login primeiro.');
+      if (!book || !book.id) return toast('Livro inválido.');
+      currentMove = { type: 'checkout', book };
+      el('#mvQty').value = 1;
+      el('#mvBorrower').value = '';
+      el('#mvDue').value = '';
+      el('#mvTitle').textContent = `Registrar Saída: ${book.title}`;
+      el('#modalMove').classList.add('open');
+    }
+
     // Expor funções globais necessárias
     window.saveEdit = saveEdit;
 
