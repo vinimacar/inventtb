@@ -399,19 +399,15 @@ create index if not exists books_isbn_idx on public.books (isbn);
           <input id="bkIsbn" placeholder="Ex.: 978-8576081739" />
         </div>
         <div>
-          <label>Título *</label>
+          <label>Nome do Livro *</label>
           <input id="bkTitle" placeholder="Ex.: Estruturas de Dados" />
         </div>
         <div>
-          <label>Autor</label>
+          <label>Autor *</label>
           <input id="bkAuthor" placeholder="Ex.: Cormen et al." />
         </div>
         <div>
-          <label>Ano de Publicação</label>
-          <input id="bkYear" type="number" min="0" max="2100" placeholder="Ex.: 2020" />
-        </div>
-        <div>
-          <label>Gênero</label>
+          <label>Gênero *</label>
           <select id="bkGenre">
             <option value="">Selecione...</option>
             <option value="ACADEMICO">Acadêmico</option>
@@ -443,6 +439,14 @@ create index if not exists books_isbn_idx on public.books (isbn);
           <label>Quantidade *</label>
           <input id="bkQty" type="number" min="0" value="1" />
         </div>
+        <div>
+          <label>Ano de Publicação</label>
+          <input id="bkYear" type="number" min="0" max="2100" placeholder="Ex.: 2020" />
+        </div>
+        <div>
+          <label>Editora</label>
+          <input id="bkPublisher" placeholder="Ex.: Editora Exemplo" />
+        </div>
         <div class="grid" style="grid-column: 1 / -1;">
           <label>Notas</label>
           <textarea id="bkNotes" rows="2" placeholder="Observações..."></textarea>
@@ -470,11 +474,12 @@ create index if not exists books_isbn_idx on public.books (isbn);
         <thead>
           <tr>
             <th data-sort="isbn">ISBN</th>
-            <th data-sort="title">Título</th>
+            <th data-sort="title">Nome do Livro</th>
             <th data-sort="author">Autor</th>
-            <th data-sort="year">Ano</th>
             <th>Gênero</th>
-            <th class="right" data-sort="quantity">Qtd.</th>
+            <th class="right" data-sort="quantity">Quantidade</th>
+            <th data-sort="year">Ano de Publicação</th>
+            <th>Editora</th>
             <th>Colaborador</th>
             <th class="right">Ações</th>
           </tr>
