@@ -825,31 +825,44 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const genre = el('#bkGenre').value || null;
       const notes = el('#bkNotes').value.trim() || null;
       const qtyValue = el('#bkQty').value;
-      const quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
+      let quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
 
+      // Validações reforçadas
       if(!title) return toast('Informe o título.');
       if(isNaN(quantity) || quantity < 0) return toast('Quantidade inválida.');
+      if(!session.user?.id) return toast('Usuário não autenticado.');
 
-      // Monta apenas os campos definidos na tabela
+      // Garante que todos os campos obrigatórios estejam presentes
       const book = {
-        isbn,
         title,
-        author,
-        year,
-        genre,
-        notes,
         quantity,
         user_id: session.user.id
       };
+      // Campos opcionais
+      if(isbn) book.isbn = isbn;
+      if(author) book.author = author;
+      if(year) book.year = year;
+      if(genre) book.genre = genre;
+      if(notes) book.notes = notes;
 
-      // Remove campos nulos ou vazios
-      Object.keys(book).forEach(k => (book[k] === null || book[k] === '') && delete book[k]);
-
-      const { error } = await supabaseClient.from('books').insert(book);
-      if(error) return toast(error.message);
-      toast('Livro adicionado.');
-      clearForm();
-      await loadBooks();
+      try {
+        const { error } = await supabaseClient.from('books').insert(book);
+        if(error) {
+          if(error.message && error.message.includes('user_id')) {
+            return toast('Erro: usuário não autenticado ou user_id inválido. Faça login novamente.');
+          }
+          if(error.message && error.message.includes('title')) {
+            return toast('Erro: título é obrigatório.');
+          }
+          return toast('Erro ao adicionar livro: ' + error.message);
+        }
+        toast('Livro adicionado.');
+        clearForm();
+        await loadBooks();
+      } catch (e) {
+        toast('Erro inesperado ao adicionar livro.');
+        console.error(e);
+      }
     }
 
     function clearForm(){
