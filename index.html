@@ -1166,6 +1166,26 @@ create index if not exists books_isbn_idx on public.books (isbn);
     // Expor funções globais necessárias
     window.openEdit = openEdit;
     window.openMove = openMove;
+
+    // Função para excluir livro
+    async function delBook(id) {
+      ensureClient();
+      if (!session) return toast('Faça login primeiro.');
+      if (!id) return toast('ID do livro inválido.');
+      const book = booksCache.find(b => b.id === id);
+      if (!book) return toast('Livro não encontrado.');
+      if (book.user_id !== session.user.id) return toast('Você só pode excluir seus próprios livros.');
+      if (!confirm(`Tem certeza que deseja excluir o livro "${book.title}"?`)) return;
+      try {
+        const { error } = await supabaseClient.from('books').delete().eq('id', id);
+        if (error) return toast('Erro ao excluir: ' + error.message);
+        toast('Livro excluído.');
+        await loadBooks();
+      } catch (e) {
+        toast('Erro inesperado ao excluir livro.');
+        console.error(e);
+      }
+    }
     window.delBook = delBook;
     
     })(); // Fim do escopo isolado
