@@ -830,6 +830,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const author = el('#bkAuthor').value.trim() || null;
       const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
       const genre = el('#bkGenre').value || null;
+      const publisher = el('#bkPublisher').value.trim() || null;
       const notes = el('#bkNotes').value.trim() || null;
       const qtyValue = el('#bkQty').value;
       let quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
@@ -850,6 +851,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
       if(author) book.author = author;
       if(year) book.year = year;
       if(genre) book.genre = genre;
+      if(publisher) book.publisher = publisher;
       if(notes) book.notes = notes;
 
       try {
@@ -896,55 +898,64 @@ create index if not exists books_isbn_idx on public.books (isbn);
       el('#modalEdit').classList.add('open');
     }
 
-    async function saveEdit(){
-      ensureClient();
-      if(!session){ return toast('Faça login primeiro.'); }
-      if(!currentEditId) return;
-      const year = el('#edYear').value ? parseInt(el('#edYear').value, 10) : null;
-      const genre = el('#edGenre').value || null;
-      const notes = el('#edNotes').value.trim() || null;
-
-      const upd = {
-        isbn: el('#edIsbn').value.trim() || null,
-        title: el('#edTitle').value.trim(),
-        author: el('#edAuthor').value.trim() || null,
-        year: year,
-        genre: genre,
-        notes: notes,
-        quantity: parseInt(el('#edQty').value || '0', 10),
-      };
-      Object.keys(upd).forEach(k => (upd[k] === null || upd[k] === '') && delete upd[k]);
-
-      const { error } = await supabaseClient.from('books').update(upd).eq('id', currentEditId);
-      if(error) return toast(error.message);
-      toast('Alterações salvas.');
-      el('#modalEdit').classList.remove('open');
-      currentEditId = null;
-      await loadBooks();
+    function renderBooks(){
+      try {
+        const q = el('#search').value?.toLowerCase() || '';
+        const tbody = el('#tblBooks tbody');
+        if (!tbody || typeof tbody.innerHTML === 'undefined') {
+          console.error('Table tbody not found or invalid');
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        const rows = booksCache.filter(b => (
+          `${b.title} ${b.author||''} ${b.isbn||''} ${b.year||''} ${b.genre||b.category||''} ${b.publisher||''}`.toLowerCase().includes(q)
+        ));
+        
+        const totalBadge = el('#totalBadge');
+        if (totalBadge) {
+          totalBadge.textContent = `${rows.length} itens`;
+        }
+        
+        for(const b of rows){
+          const tr = document.createElement('tr');
+          const qtyClass = b.quantity <= 1 ? 'qty-low' : 'qty-ok';
+          let colaborador = '—';
+          if (b.user_id && session && session.user && b.user_id === session.user.id) {
+            colaborador = session.user.email;
+          } else if (b.user_email) {
+            colaborador = b.user_email;
+          }
+          // Use sempre 'genre' (em inglês)
+          let actionButtons = `
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'>✏️</button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'>🗑️</button>
+          `;
+          tr.innerHTML = `
+            <td>${escapeHtml(b.isbn||'—')}</td>
+            <td>${escapeHtml(b.title)}</td>
+            <td>${escapeHtml(b.author||'—')}</td>
+            <td>${escapeHtml(b.genre||b.category||'—')}</td>
+            <td class="right ${qtyClass}">${b.quantity}</td>
+            <td>${escapeHtml(b.year||'—')}</td>
+            <td>${escapeHtml(b.publisher||'—')}</td>
+            <td>${escapeHtml(colaborador)}</td>
+            <td class="right">${actionButtons}</td>`;
+          tbody.appendChild(tr);
+        }
+      } catch (error) {
+        console.error('Error in renderBooks:', error);
+        toast('Erro ao renderizar a lista de livros');
+      }
     }
 
-    async function delBook(id){
+    // Função confirmMove corrigida (o bloco estava fora de função)
+    async function confirmMove() {
       ensureClient();
-      if(!confirm('Excluir este livro?')) return;
-      const { error } = await supabaseClient.from('books').delete().eq('id', id);
-      if(error) return toast(error.message);
-      toast('Livro excluído.');
-      await loadBooks();
-    }
-
-    function openMove(bookRef, type){
-      currentMove = { type, book: bookRef };
-      el('#mvTitle').textContent = type === 'checkout' ? 'Registrar Saída (empréstimo)' : 'Registrar Devolução';
-      el('#mvQty').value = 1;
-      el('#mvBorrower').value = '';
-      el('#mvDue').value = '';
-      el('#modalMove').classList.add('open');
-    }
-
-    async function confirmMove(){
-      ensureClient();
-      const qty = parseInt(el('#mvQty').value || '1', 10);
-      if(qty <= 0) return toast('Quantidade inválida.');
+      if (!session) return toast('Faça login primeiro.');
+      if (!currentMove.book) return toast('Nenhum livro selecionado.');
+      const qty = parseInt(el('#mvQty').value, 10);
+      if (isNaN(qty) || qty < 1) return toast('Quantidade inválida.');
       const borrower = el('#mvBorrower').value.trim() || null;
       const due = el('#mvDue').value ? new Date(el('#mvDue').value).toISOString().slice(0,10) : null;
 
@@ -989,11 +1000,12 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const rows = getFilteredRows();
       const data = rows.map(b => ({
         ISBN: b.isbn || '',
-        Título: b.title,
+        'Nome do Livro': b.title,
         Autor: b.author || '',
-        Ano: b.year || '',
         Gênero: b.genre || '',
         Quantidade: b.quantity,
+        'Ano de Publicação': b.year || '',
+        Editora: b.publisher || '',
         Colaborador: (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—'),
         Criado_em: b.created_at?.slice(0,10) || ''
       }));
@@ -1010,16 +1022,17 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const margin = 40;
       doc.setFontSize(16);
       doc.text('Inventário da Biblioteca', margin, 40);
-  const head = [['ISBN','Título','Autor','Ano','Gênero','Qtd.','Colaborador']];
-  const body = rows.map(b => [
-    b.isbn||'',
-    b.title,
-    b.author||'',
-    b.year||'',
-    b.genre||'',
-    String(b.quantity),
-    (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—')
-  ]);
+      const head = [['ISBN','Nome do Livro','Autor','Gênero','Quantidade','Ano de Publicação','Editora','Colaborador']];
+      const body = rows.map(b => [
+        b.isbn||'',
+        b.title,
+        b.author||'',
+        b.genre||'',
+        String(b.quantity),
+        b.year||'',
+        b.publisher||'',
+        (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—')
+      ]);
       if(doc.autoTable){
         doc.autoTable({
           head, body, startY: 60, styles: { fontSize: 9 }, headStyles: { fillColor: [34,197,94] }, margin: { left: margin, right: margin }
