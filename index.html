@@ -18,19 +18,20 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --bg: linear-gradient(135deg, #e0e7ff 0%, #f7f9fb 100%);
+      --bg: linear-gradient(135deg, #f0f4ff 0%, #e3e9f7 100%);
       --card: #fff;
-      --muted: #bfc9d9;
-      --text: #23272f;
-      --accent: #2563eb;
-      --accent2: #10b981;
+      --muted: #8a99b3;
+      --text: #1a2233;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
       --danger: #ef4444;
       --warn: #f59e0b;
-      --shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
+      --info: #0ea5e9;
+      --shadow: 0 4px 24px 0 rgba(59, 130, 246, 0.10);
       --radius: 18px;
-      --glass: rgba(255,255,255,0.85);
-      --neon: 0 0 8px #10b98180;
-  --font: 'Lora', 'Segoe UI', 'Arial', serif;
+      --glass: rgba(255,255,255,0.92);
+      --neon: 0 0 8px #3b82f680;
+      --font: 'Lora', 'Segoe UI', 'Arial', serif;
     }
     * { box-sizing: border-box; }
     body {
@@ -62,23 +63,24 @@
       padding: 12px 0 0 0;
     }
     h1 {
-      font-size: 36px;
+      font-size: 38px;
       margin: 0;
       letter-spacing: 1px;
       color: var(--accent);
       font-family: 'Lora', var(--font);
       font-weight: 700;
       background: none;
-      text-shadow: 0 2px 8px #2563eb22;
+      text-shadow: 0 2px 12px #3b82f622;
       letter-spacing: 1.5px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
     h1 .bi {
-      font-size: 1.3em;
-      color: var(--accent2);
+      font-size: 1.5em;
+      color: var(--info);
       margin-right: 6px;
+      filter: drop-shadow(0 2px 4px #0ea5e955);
     }
     .card {
       background: var(--card);
@@ -86,9 +88,19 @@
       padding: 22px 22px 16px 22px;
       box-shadow: var(--shadow);
       margin-bottom: 20px;
-      border: 1.5px solid #e0e7ff;
+      border: 1.5px solid #c7d2fe;
       transition: box-shadow 0.2s, border 0.2s;
       font-family: 'Lora', var(--font);
+      position: relative;
+    }
+    .card:before {
+      content: '';
+      display: block;
+      position: absolute;
+      left: 0; top: 0; height: 100%; width: 6px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--info) 100%);
+      border-radius: 8px 0 0 8px;
+      opacity: 0.10;
     }
     .card:hover {
       box-shadow: 0 4px 24px 0 #10b98133;
@@ -138,13 +150,45 @@
       font-family: 'Lora', var(--font);
       font-weight: 600;
       font-size: 16px;
-      box-shadow: 0 2px 8px 0 #10b98122;
+      box-shadow: 0 2px 8px 0 #3b82f622;
       letter-spacing: 0.5px;
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
       outline: none;
       display: inline-flex;
       align-items: center;
       gap: 7px;
+      position: relative;
+    }
+    button .bi {
+      font-size: 1.2em;
+      filter: drop-shadow(0 1px 2px #0ea5e955);
+    }
+    button.ghost {
+      background: transparent;
+      border: 1.5px solid var(--accent2);
+      color: var(--accent2);
+      box-shadow: none;
+    }
+    button.ghost .bi {
+      color: var(--accent2);
+    }
+    button.ghost:hover {
+      background: var(--accent2);
+      color: #fff;
+    }
+    button.ghost:hover .bi {
+      color: #fff;
+    }
+    button.warn {
+      background: var(--warn);
+      color: #fff;
+    }
+    button.danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    button:active {
+      transform: scale(0.97);
     }
     button:hover, button:focus {
       background: linear-gradient(90deg, var(--accent2) 60%, var(--accent) 100%);
@@ -211,16 +255,21 @@
       padding: 6px 16px;
       border-radius: 999px;
       font-size: 14px;
-      border: 1.5px solid var(--accent2);
-      color: var(--accent2);
+      border: 1.5px solid var(--info);
+      color: var(--info);
       background: #e0f2fe;
       text-shadow: none;
       font-family: 'Lora', var(--font);
       letter-spacing: 0.5px;
-      box-shadow: 0 1px 4px 0 #10b98111;
+      box-shadow: 0 1px 4px 0 #0ea5e911;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+    }
+    .badge .bi {
+      color: var(--info);
+      margin-right: 3px;
+      font-size: 1.1em;
     }
   .qty-low { color: #ff3c6a; font-weight: bold; }
   .qty-ok { color: var(--accent2); font-weight: bold; }
@@ -322,7 +371,7 @@
       </div>
     </header>
 
-    <details class="card" open>
+  <details class="card">
       <summary><strong><i class="bi bi-gear"></i> Passos de Configuração (Supabase)</strong></summary>
       <div class="grid" style="margin-top:10px">
         <ol>
@@ -498,10 +547,10 @@ create index if not exists books_isbn_idx on public.books (isbn);
           <input id="search" placeholder="Buscar por título/autor/ISBN..." />
         </div>
         <div class="stack">
-          <span class="badge" id="totalBadge"><i class="bi bi-collection"></i> 0 itens</span>
-          <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
-          <button id="export-xls" class="ghost"><i class="bi bi-file-earmark-excel"></i> Exportar XLS</button>
-          <button id="export-pdf" class="ghost"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+          <span class="badge" id="totalBadge"><i class="bi bi-collection-fill"></i> 0 itens</span>
+          <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
+          <button id="export-xls" class="ghost"><i class="bi bi-file-earmark-spreadsheet-fill" style="color:#22c55e"></i> Exportar XLS</button>
+          <button id="export-pdf" class="ghost"><i class="bi bi-file-earmark-pdf-fill" style="color:#ef4444"></i> Exportar PDF</button>
         </div>
       </div>
       <table id="tblBooks">
@@ -838,8 +887,8 @@ create index if not exists books_isbn_idx on public.books (isbn);
           }
           // Use sempre 'genre' (em inglês)
           let actionButtons = `
-            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'><i class="bi bi-pencil-square"></i></button>
-            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'><i class="bi bi-trash"></i></button>
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'><i class="bi bi-pencil-fill" style="color:#0ea5e9"></i></button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'><i class="bi bi-trash-fill" style="color:#ef4444"></i></button>
           `;
           tr.innerHTML = `
             <td>${escapeHtml(b.isbn||'—')}</td>
