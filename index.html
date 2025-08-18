@@ -336,16 +336,24 @@
     .small { font-size: 12px; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
+    @media (max-width: 900px) {
+      .container { max-width: 100vw; margin: 0; border-radius: 0; }
+      .card { border-radius: 0; }
+    }
     @media (max-width: 760px){
-      .grid.cols-3 { grid-template-columns: 1fr; }
-      .grid.cols-2 { grid-template-columns: 1fr; }
-      header { grid-template-columns: 1fr; flex-direction: column; align-items: flex-start; gap: 8px; }
+      .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 8px; }
       .container { padding: 0 2px; }
-      .card { padding: 14px 6px 10px 6px; }
-      table, th, td { font-size: 14px; }
-      h1 { font-size: 22px; }
-      button { font-size: 14px; padding: 10px 12px; }
-      .badge { font-size: 12px; padding: 4px 10px; }
+      .card { padding: 10px 2vw 8px 2vw; }
+      table, th, td { font-size: 13px; }
+      h1 { font-size: 20px; }
+      button { font-size: 13px; padding: 8px 8px; }
+      .badge { font-size: 11px; padding: 3px 7px; }
+      .toolbar { flex-direction: column; gap: 8px; align-items: stretch; }
+      .toolbar .search { flex: 1 1 100%; }
+      .modal .panel { max-width: 98vw; }
+      .stack { flex-wrap: wrap; gap: 8px; }
+      th, td { padding: 8px 4px; }
     }
 
     pre {
@@ -364,10 +372,10 @@
 <body>
   <div class="container">
     <header>
-      <h1><i class="bi bi-journal-bookmark"></i> Inventário de Biblioteca</h1>
+  <h1><i class="bi bi-bookshelf"></i> Inventário de Biblioteca</h1>
       <div class="stack" id="authStatus">
-        <span class="badge"><i class="bi bi-person-x"></i> Desconectado</span>
-        <button class="primary" id="btnOpenAuth"><i class="bi bi-box-arrow-in-right"></i> Entrar</button>
+  <span class="badge"><i class="bi bi-person-circle"></i> Desconectado</span>
+  <button class="primary" id="btnOpenAuth"><i class="bi bi-door-open"></i> Entrar</button>
       </div>
     </header>
 
@@ -475,7 +483,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
     </section>
 
     <section class="card book-form">
-  <h3 style="margin-top:0"><i class="bi bi-plus-circle"></i> Novo Livro</h3>
+  <h3 style="margin-top:0"><i class="bi bi-journal-plus"></i> Novo Livro</h3>
       <div class="grid cols-3">
         <div>
           <label>ISBN</label>
@@ -547,10 +555,10 @@ create index if not exists books_isbn_idx on public.books (isbn);
           <input id="search" placeholder="Buscar por título/autor/ISBN..." />
         </div>
         <div class="stack">
-          <span class="badge" id="totalBadge"><i class="bi bi-collection-fill"></i> 0 itens</span>
-          <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
-          <button id="export-xls" class="ghost"><i class="bi bi-file-earmark-spreadsheet-fill" style="color:#22c55e"></i> Exportar XLS</button>
-          <button id="export-pdf" class="ghost"><i class="bi bi-file-earmark-pdf-fill" style="color:#ef4444"></i> Exportar PDF</button>
+          <span class="badge" id="totalBadge"><i class="bi bi-journals"></i> 0 itens</span>
+          <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
+          <button id="export-xls" class="ghost"><i class="bi bi-filetype-xls" style="color:#22c55e"></i> Exportar XLS</button>
+          <button id="export-pdf" class="ghost"><i class="bi bi-filetype-pdf" style="color:#ef4444"></i> Exportar PDF</button>
         </div>
       </div>
       <table id="tblBooks">
@@ -887,8 +895,8 @@ create index if not exists books_isbn_idx on public.books (isbn);
           }
           // Use sempre 'genre' (em inglês)
           let actionButtons = `
-            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'><i class="bi bi-pencil-fill" style="color:#0ea5e9"></i></button>
-            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'><i class="bi bi-trash-fill" style="color:#ef4444"></i></button>
+            <button title="Editar" onclick='openEdit(${JSON.stringify(b)})'><i class="bi bi-pencil-square" style="color:#0ea5e9"></i></button>
+            <button title="Excluir" class="danger" onclick='delBook("${b.id}")'><i class="bi bi-x-circle-fill" style="color:#ef4444"></i></button>
           `;
           tr.innerHTML = `
             <td>${escapeHtml(b.isbn||'—')}</td>
