@@ -1106,6 +1106,50 @@ create index if not exists books_isbn_idx on public.books (isbn);
 
     function debounce(fn, ms){ let t; return (...args) => { clearTimeout(t); t = setTimeout(()=> fn.apply(this,args), ms); } }
 
+    // Função para salvar edição de livro
+    async function saveEdit() {
+      ensureClient();
+      if (!session) return toast('Faça login primeiro.');
+      if (!currentEditId) return toast('Nenhum livro selecionado para edição.');
+      const title = el('#edTitle').value.trim();
+      const isbn = el('#edIsbn').value.trim() || null;
+      const author = el('#edAuthor').value.trim() || null;
+      const year = el('#edYear').value ? parseInt(el('#edYear').value, 10) : null;
+      const genre = el('#edGenre').value || null;
+      const qtyValue = el('#edQty').value;
+      let quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
+      const notes = el('#edNotes').value.trim() || null;
+      // Adiciona Editora
+      const publisher = el('#bkPublisher') && el('#bkPublisher').value ? el('#bkPublisher').value.trim() : null;
+
+      if (!title) return toast('Informe o título.');
+      if (isNaN(quantity) || quantity < 0) return toast('Quantidade inválida.');
+
+      // Monta objeto de atualização
+      const update = { title, quantity };
+      if (isbn) update.isbn = isbn;
+      if (author) update.author = author;
+      if (year) update.year = year;
+      if (genre) update.genre = genre;
+      if (notes) update.notes = notes;
+      if (publisher !== undefined) update.publisher = publisher;
+
+      try {
+        const { error } = await supabaseClient.from('books').update(update).eq('id', currentEditId);
+        if (error) return toast('Erro ao salvar edição: ' + error.message);
+        toast('Livro atualizado.');
+        el('#modalEdit').classList.remove('open');
+        await loadBooks();
+        currentEditId = null;
+      } catch (e) {
+        toast('Erro inesperado ao salvar edição.');
+        console.error(e);
+      }
+    }
+
+    // Expor funções globais necessárias
+    window.saveEdit = saveEdit;
+
     // Expor funções globais necessárias
     window.openEdit = openEdit;
     window.openMove = openMove;
