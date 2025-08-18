@@ -542,6 +542,10 @@ create index if not exists books_isbn_idx on public.books (isbn);
               <label>Quantidade *</label>
               <input id="edQty" type="number" min="0" value="1" />
             </div>
+            <div>
+              <label>Editora</label>
+              <input id="edPublisher" placeholder="Ex.: Editora Exemplo" />
+            </div>
           </div>
           <div class="grid" style="grid-column: 1 / -1;">
             <label>Notas</label>
@@ -887,15 +891,16 @@ create index if not exists books_isbn_idx on public.books (isbn);
       if(book.user_id !== session.user.id){ 
         return toast('Você só pode editar seus próprios livros.'); 
       }
-      currentEditId = book.id;
-      el('#edIsbn').value = book.isbn || '';
-      el('#edTitle').value = book.title || '';
-      el('#edAuthor').value = book.author || '';
-      el('#edYear').value = book.year || '';
-      el('#edGenre').value = book.genre || book.category || ''; // Tenta genre primeiro, depois category para compatibilidade
-      el('#edQty').value = book.quantity || 0;
-      el('#edNotes').value = book.notes || '';
-      el('#modalEdit').classList.add('open');
+  currentEditId = book.id;
+  el('#edIsbn').value = book.isbn || '';
+  el('#edTitle').value = book.title || '';
+  el('#edAuthor').value = book.author || '';
+  el('#edYear').value = book.year || '';
+  el('#edGenre').value = book.genre || book.category || '';
+  el('#edQty').value = book.quantity || 0;
+  el('#edNotes').value = book.notes || '';
+  el('#edPublisher').value = book.publisher || '';
+  el('#modalEdit').classList.add('open');
     }
 
     function renderBooks(){
@@ -1118,9 +1123,9 @@ create index if not exists books_isbn_idx on public.books (isbn);
       const genre = el('#edGenre').value || null;
       const qtyValue = el('#edQty').value;
       let quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
-      const notes = el('#edNotes').value.trim() || null;
-      // Adiciona Editora
-      const publisher = el('#bkPublisher') && el('#bkPublisher').value ? el('#bkPublisher').value.trim() : null;
+  const notes = el('#edNotes').value.trim() || null;
+  // Editora do modal de edição
+  const publisher = el('#edPublisher') && el('#edPublisher').value ? el('#edPublisher').value.trim() : null;
 
       if (!title) return toast('Informe o título.');
       if (isNaN(quantity) || quantity < 0) return toast('Quantidade inválida.');
