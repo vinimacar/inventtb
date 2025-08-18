@@ -1010,7 +1010,7 @@ create index if not exists books_isbn_idx on public.books (isbn);
         Gênero: b.genre || '',
         Quantidade: b.quantity,
         'Ano de Publicação': b.year || '',
-        Editora: b.publisher || '',
+        Editora: b.publisher || '', // <-- already included
         Colaborador: (b.user_id && session && session.user && b.user_id === session.user.id) ? session.user.email : (b.user_email || '—'),
         Criado_em: b.created_at?.slice(0,10) || ''
       }));
