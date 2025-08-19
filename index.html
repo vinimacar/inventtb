@@ -18,19 +18,19 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --bg: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+      --bg: linear-gradient(120deg, #f8fafc 0%, #e0e7ef 100%);
       --card: #fff;
-      --muted: #7b8794;
+      --muted: #64748b;
       --text: #23272f;
-      --accent: #1e40af;
-      --accent2: #16a34a;
-      --danger: #dc2626;
+      --accent: #2563eb;
+      --accent2: #22d3ee;
+      --danger: #ef4444;
       --warn: #f59e0b;
       --info: #0ea5e9;
-      --shadow: 0 4px 24px 0 rgba(30, 64, 175, 0.10);
-      --radius: 18px;
-      --glass: rgba(255,255,255,0.96);
-      --neon: 0 0 8px #1e40af80;
+      --shadow: 0 6px 32px 0 rgba(37,99,235,0.10);
+      --radius: 22px;
+      --glass: rgba(255,255,255,0.98);
+      --neon: 0 0 12px #22d3ee80;
       --font: 'Inter', 'Segoe UI', 'Arial', sans-serif;
       --font-title: 'Lora', 'Inter', serif;
     }
@@ -49,64 +49,80 @@
     }
     .container {
       max-width: 980px;
-      margin: 40px auto;
-      padding: 0 16px;
+      margin: 32px auto 32px auto;
+      padding: 0 2vw 32px 2vw;
       background: var(--glass);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
+      min-height: 92vh;
+      transition: box-shadow 0.2s;
     }
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 28px;
-      gap: 12px;
-      background: transparent;
+      margin-bottom: 32px;
+      gap: 18px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
       border-radius: var(--radius);
-      padding: 12px 0 0 0;
+      padding: 24px 32px 18px 32px;
+      box-shadow: 0 4px 24px 0 #22d3ee22;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    header:after {
+      content: '';
+      position: absolute;
+      right: -60px; top: -60px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, #fff3 0%, transparent 70%);
+      z-index: 0;
     }
     h1 {
-      font-size: 40px;
+      font-size: 2.5rem;
       margin: 0;
       letter-spacing: 1.2px;
-      color: var(--accent);
+      color: #fff;
       font-family: var(--font-title);
       font-weight: 700;
       background: none;
-      text-shadow: 0 2px 12px #1e40af22;
+      text-shadow: 0 2px 12px #2563eb55;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+      z-index: 1;
     }
     h1 .bi {
-      font-size: 1.5em;
-      color: var(--info);
+      font-size: 1.6em;
+      color: #fff;
       margin-right: 6px;
-      filter: drop-shadow(0 2px 4px #0ea5e955);
+      filter: drop-shadow(0 2px 4px #22d3ee99);
     }
     .card {
       background: var(--card);
       border-radius: var(--radius);
-      padding: 22px 22px 16px 22px;
+      padding: 28px 28px 18px 28px;
       box-shadow: var(--shadow);
-      margin-bottom: 20px;
-      border: 1.5px solid #c7d2fe;
+      margin-bottom: 28px;
+      border: none;
       transition: box-shadow 0.2s, border 0.2s;
-      font-family: 'Lora', var(--font);
+      font-family: var(--font);
       position: relative;
+      overflow: hidden;
     }
     .card:before {
       content: '';
       display: block;
       position: absolute;
-      left: 0; top: 0; height: 100%; width: 6px;
-      background: linear-gradient(180deg, var(--accent) 0%, var(--info) 100%);
-      border-radius: 8px 0 0 8px;
+      left: -40px; top: -40px; height: 120px; width: 120px;
+      background: radial-gradient(circle, var(--accent2) 0%, transparent 70%);
       opacity: 0.10;
+      z-index: 0;
     }
     .card:hover {
-      box-shadow: 0 4px 24px 0 #10b98133;
-      border: 1.5px solid var(--accent2);
+      box-shadow: 0 8px 32px 0 #22d3ee33;
+      border: none;
     }
     .grid { display: grid; gap: 16px; }
     .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
@@ -259,13 +275,13 @@
       padding: 6px 16px;
       border-radius: 999px;
       font-size: 14px;
-      border: 1.5px solid var(--accent);
-      color: var(--accent);
-      background: #e0e7ef;
-      text-shadow: none;
+      border: none;
+      color: #fff;
+      background: linear-gradient(90deg, var(--accent) 60%, var(--accent2) 100%);
+      text-shadow: 0 1px 4px #2563eb33;
       font-family: var(--font);
       letter-spacing: 0.5px;
-      box-shadow: 0 1px 4px 0 #1e40af11;
+      box-shadow: 0 1px 4px 0 #22d3ee22;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -343,14 +359,15 @@
     @media (max-width: 900px) {
       .container { max-width: 100vw; margin: 0; border-radius: 0; }
       .card { border-radius: 0; }
+      header { border-radius: 0; padding: 18px 2vw 12px 2vw; }
     }
     @media (max-width: 760px){
       .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
-      header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 2vw 10px 2vw; }
       .container { padding: 0 2px; }
       .card { padding: 10px 2vw 8px 2vw; }
       table, th, td { font-size: 13px; }
-      h1 { font-size: 22px; }
+      h1 { font-size: 1.3rem; }
       button { font-size: 13px; padding: 8px 8px; }
       .badge { font-size: 11px; padding: 3px 7px; }
       .toolbar { flex-direction: column; gap: 8px; align-items: stretch; }
@@ -378,8 +395,8 @@
     <header>
   <h1><i class="bi bi-bookshelf"></i> Inventário de Biblioteca</h1>
       <div class="stack" id="authStatus">
-  <span class="badge"><i class="bi bi-person-circle"></i> Desconectado</span>
-  <button class="primary" id="btnOpenAuth"><i class="bi bi-door-open"></i> Entrar</button>
+  <span class="badge">Desconectado</span>
+  <button class="primary" id="btnOpenAuth">Entrar</button>
       </div>
     </header>
 
