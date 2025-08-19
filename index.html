@@ -6,8 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Inventário de Biblioteca</title>
-  <!-- Google Fonts: Lora (elegante), Bootstrap Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts: Lora (títulos), Inter (corpo), Bootstrap Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <!-- Supabase JS -->
   <script defer src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -18,20 +18,21 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --bg: linear-gradient(135deg, #f0f4ff 0%, #e3e9f7 100%);
+      --bg: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
       --card: #fff;
-      --muted: #8a99b3;
-      --text: #1a2233;
-      --accent: #3b82f6;
-      --accent2: #22c55e;
-      --danger: #ef4444;
+      --muted: #7b8794;
+      --text: #23272f;
+      --accent: #1e40af;
+      --accent2: #16a34a;
+      --danger: #dc2626;
       --warn: #f59e0b;
       --info: #0ea5e9;
-      --shadow: 0 4px 24px 0 rgba(59, 130, 246, 0.10);
+      --shadow: 0 4px 24px 0 rgba(30, 64, 175, 0.10);
       --radius: 18px;
-      --glass: rgba(255,255,255,0.92);
-      --neon: 0 0 8px #3b82f680;
-      --font: 'Lora', 'Segoe UI', 'Arial', serif;
+      --glass: rgba(255,255,255,0.96);
+      --neon: 0 0 8px #1e40af80;
+      --font: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+      --font-title: 'Lora', 'Inter', serif;
     }
     * { box-sizing: border-box; }
     body {
@@ -43,6 +44,8 @@
       background-attachment: fixed;
       background-repeat: no-repeat;
       background-size: cover;
+      font-size: 17px;
+      letter-spacing: 0.01em;
     }
     .container {
       max-width: 980px;
@@ -63,15 +66,14 @@
       padding: 12px 0 0 0;
     }
     h1 {
-      font-size: 38px;
+      font-size: 40px;
       margin: 0;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       color: var(--accent);
-      font-family: 'Lora', var(--font);
+      font-family: var(--font-title);
       font-weight: 700;
       background: none;
-      text-shadow: 0 2px 12px #3b82f622;
-      letter-spacing: 1.5px;
+      text-shadow: 0 2px 12px #1e40af22;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -111,17 +113,18 @@
     .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
     .stack { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     label {
-      font-size: 13px;
-      color: #6b7a90;
+      font-size: 14px;
+      color: #475569;
       letter-spacing: 0.5px;
-      font-weight: 500;
+      font-weight: 600;
       text-shadow: none;
+      font-family: var(--font);
     }
     input, select, textarea {
       width: 100%;
       padding: 12px 14px;
-      background: #f3f4f6;
-      border: 1.5px solid #e0e7ff;
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       color: var(--text);
       outline: none;
@@ -131,14 +134,15 @@
       transition: border 0.2s, background 0.2s;
     }
     input:focus, select:focus, textarea:focus {
-      border: 2px solid var(--accent2);
+      border: 2px solid var(--accent);
       background: #fff;
       box-shadow: var(--neon);
     }
     input::placeholder, textarea::placeholder {
-      color: #bfc9d9;
+      color: #a0aec0;
       opacity: 1;
       font-style: italic;
+      font-family: var(--font);
     }
     button {
       border: none;
@@ -147,10 +151,10 @@
       padding: 12px 22px;
       border-radius: 10px;
       cursor: pointer;
-      font-family: 'Lora', var(--font);
-      font-weight: 600;
+      font-family: var(--font);
+      font-weight: 700;
       font-size: 16px;
-      box-shadow: 0 2px 8px 0 #3b82f622;
+      box-shadow: 0 2px 8px 0 #1e40af22;
       letter-spacing: 0.5px;
       transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
       outline: none;
@@ -255,23 +259,23 @@
       padding: 6px 16px;
       border-radius: 999px;
       font-size: 14px;
-      border: 1.5px solid var(--info);
-      color: var(--info);
-      background: #e0f2fe;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      background: #e0e7ef;
       text-shadow: none;
-      font-family: 'Lora', var(--font);
+      font-family: var(--font);
       letter-spacing: 0.5px;
-      box-shadow: 0 1px 4px 0 #0ea5e911;
+      box-shadow: 0 1px 4px 0 #1e40af11;
       display: inline-flex;
       align-items: center;
       gap: 6px;
     }
     .badge .bi {
-      color: var(--info);
+      color: var(--accent);
       margin-right: 3px;
       font-size: 1.1em;
     }
-  .qty-low { color: #ff3c6a; font-weight: bold; }
+  .qty-low { color: #dc2626; font-weight: bold; }
   .qty-ok { color: var(--accent2); font-weight: bold; }
     .right { text-align: right; }
 
@@ -332,7 +336,7 @@
     }
     .toast.show { display: block; }
 
-    .muted { color: #7f8fa6; }
+  .muted { color: #64748b; }
     .small { font-size: 12px; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
@@ -346,7 +350,7 @@
       .container { padding: 0 2px; }
       .card { padding: 10px 2vw 8px 2vw; }
       table, th, td { font-size: 13px; }
-      h1 { font-size: 20px; }
+      h1 { font-size: 22px; }
       button { font-size: 13px; padding: 8px 8px; }
       .badge { font-size: 11px; padding: 3px 7px; }
       .toolbar { flex-direction: column; gap: 8px; align-items: stretch; }
@@ -550,33 +554,37 @@ create index if not exists books_isbn_idx on public.books (isbn);
     </section>
 
     <section class="card books">
-      <div class="toolbar">
-        <div class="search">
-          <input id="search" placeholder="Buscar por título/autor/ISBN..." />
+      <div>
+        <div class="toolbar">
+          <div class="search">
+            <input id="search" placeholder="Buscar por título/autor/ISBN..." />
+          </div>
+          <div class="stack">
+            <span class="badge" id="totalBadge"><i class="bi bi-journals"></i> 0 itens</span>
+            <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
+            <button id="export-xls" class="ghost"><i class="bi bi-filetype-xls" style="color:#22c55e"></i> Exportar XLS</button>
+            <button id="export-pdf" class="ghost"><i class="bi bi-filetype-pdf" style="color:#ef4444"></i> Exportar PDF</button>
+          </div>
         </div>
-        <div class="stack">
-          <span class="badge" id="totalBadge"><i class="bi bi-journals"></i> 0 itens</span>
-          <button id="btnRefresh" class="ghost"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
-          <button id="export-xls" class="ghost"><i class="bi bi-filetype-xls" style="color:#22c55e"></i> Exportar XLS</button>
-          <button id="export-pdf" class="ghost"><i class="bi bi-filetype-pdf" style="color:#ef4444"></i> Exportar PDF</button>
+        <div style="overflow-x:auto;">
+          <table id="tblBooks">
+            <thead>
+              <tr>
+                <th data-sort="isbn">ISBN</th>
+                <th data-sort="title">Nome do Livro</th>
+                <th data-sort="author">Autor</th>
+                <th>Gênero</th>
+                <th class="right" data-sort="quantity">Quantidade</th>
+                <th data-sort="year">Ano de Publicação</th>
+                <th>Editora</th>
+                <th>Colaborador</th>
+                <th class="right">Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
-      <table id="tblBooks">
-        <thead>
-          <tr>
-            <th data-sort="isbn">ISBN</th>
-            <th data-sort="title">Nome do Livro</th>
-            <th data-sort="author">Autor</th>
-            <th>Gênero</th>
-            <th class="right" data-sort="quantity">Quantidade</th>
-            <th data-sort="year">Ano de Publicação</th>
-            <th>Editora</th>
-            <th>Colaborador</th>
-            <th class="right">Ações</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
     </section>
 
     <div class="modal" id="modalEdit">
