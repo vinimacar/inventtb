@@ -414,9 +414,7 @@
         <div>
           <label class="small muted">SQL: Tabelas & Políticas (cole no SQL Editor)</label>
           <pre><code>-- Habilite a extensão pgcrypto se necessário
--- create extension if not exists pgcrypto;
 
--- Tabela de livros
 create table if not exists public.books (
   id uuid primary key default gen_random_uuid(),
   created_at timestamp with time zone default now(),
@@ -425,7 +423,9 @@ create table if not exists public.books (
   isbn text,
   category text,
   year integer,
-  genre text,
+  genre text check (genre is null or genre in (
+    'ACADEMICO','AUTOAJUDA','AVENTURA','BIOGRAFIA','CIENCIAS','CRÔNICAS','FORMAÇÃO','DIDATICO','DRAMA','EDUCACAO','FANTASIA','FICCAO','FICCAO_CIENTIFICA','HISTORIA','INFANTIL','JUVENIL','LITERATURA','MISTERIO','NOVELA','NAO_FICCAO','OUTROS','POESIA','ROMANCE','TEATRO','TECNOLOGIA','TECNICO','TERROR'
+  )),
   location text,
   notes text,
   quantity integer not null default 1,
