@@ -951,34 +951,42 @@ create index if not exists books_isbn_idx on public.books (isbn);
     function escapeHtml(str){ return (str+"").replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m])); }
 
     async function addBook(){
+
       ensureClient();
       if(!session){ return toast('Faça login primeiro.'); }
       const title = el('#bkTitle').value.trim();
-      const isbn = el('#bkIsbn').value.trim() || null;
-      const author = el('#bkAuthor').value.trim() || null;
+      const isbn = el('#bkIsbn').value.trim();
+      const author = el('#bkAuthor').value.trim();
       const year = el('#bkYear').value ? parseInt(el('#bkYear').value, 10) : null;
-      const genre = el('#bkGenre').value || null;
-      const publisher = el('#bkPublisher').value.trim() || null;
-      const notes = el('#bkNotes').value.trim() || null;
+      const genre = el('#bkGenre').value;
+      const publisher = el('#bkPublisher').value.trim();
+      const notes = el('#bkNotes').value.trim();
       const qtyValue = el('#bkQty').value;
       let quantity = qtyValue === '' ? 1 : parseInt(qtyValue, 10);
 
-      // Validações reforçadas
+      // Lista de gêneros válidos (exatamente como no ENUM do banco, com acentos)
+      const validGenres = [
+        'ACADEMICO','AUTOAJUDA','AVENTURA','BIOGRAFIA','CIENCIAS','CRÔNICAS','FORMAÇÃO','DIDATICO','DRAMA','EDUCACAO','FANTASIA','FICCAO','FICCAO_CIENTIFICA','HISTORIA','INFANTIL','JUVENIL','LITERATURA','MISTERIO','NOVELA','NAO_FICCAO','OUTROS','POESIA','ROMANCE','TEATRO','TECNOLOGIA','TECNICO','TERROR'
+      ];
+
+      // Validações obrigatórias
       if(!title) return toast('Informe o título.');
+      if(!author) return toast('Informe o autor.');
+      if(!genre) return toast('Informe o gênero.');
+      if(!validGenres.includes(genre)) return toast('Gênero inválido.');
       if(isNaN(quantity) || quantity < 0) return toast('Quantidade inválida.');
       if(!session.user?.id) return toast('Usuário não autenticado.');
 
-      // Garante que todos os campos obrigatórios estejam presentes
+      // Monta objeto só com campos válidos
       const book = {
         title,
-        quantity,
-        user_id: session.user.id
+        author,
+        genre,
+        user_id: session.user.id,
+        quantity
       };
-      // Campos opcionais
       if(isbn) book.isbn = isbn;
-      if(author) book.author = author;
       if(year) book.year = year;
-      if(genre) book.genre = genre;
       if(publisher) book.publisher = publisher;
       if(notes) book.notes = notes;
 
@@ -990,6 +998,12 @@ create index if not exists books_isbn_idx on public.books (isbn);
           }
           if(error.message && error.message.includes('title')) {
             return toast('Erro: título é obrigatório.');
+          }
+          if(error.message && error.message.includes('author')) {
+            return toast('Erro: autor é obrigatório.');
+          }
+          if(error.message && error.message.includes('genre')) {
+            return toast('Erro: gênero é obrigatório ou inválido.');
           }
           return toast('Erro ao adicionar livro: ' + error.message);
         }
